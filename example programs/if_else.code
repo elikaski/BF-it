@@ -1,0 +1,25 @@
+int main()
+{
+	print("Please enter a number: ");
+	int num = readint();
+	print("\n");
+	
+	if (num % 2 == 0)
+	{
+		print("Your number is even :)\n");
+	}
+	else
+	{
+		print("Your number is odd :(\n");
+	}
+	
+	
+	if (5)
+	{
+		print("Also, non-zero values are evaluated to true\n");
+	}
+	if (3 - 3)
+	{
+		print("This will never be executed...\n");
+	}
+}

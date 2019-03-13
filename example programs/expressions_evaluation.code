@@ -1,0 +1,141 @@
+
+// examples of usage of assignment (=, +=, -=, *=, /=, %=)
+// and unary operations (++, --, **, %%, !)
+
+int main()
+ {
+ 
+	// basic assignment
+	int x = 27;
+	printint(x == 27);
+
+	// += assignment
+	x = 27;
+	x += 10;
+	printint(x == 37);
+   
+	// -= assignment
+	x = 27;
+	x -= 10;
+	printint(x == 17);
+	
+	// *= assignment
+	x = 13;
+	x *= 3;
+	printint(x == 39);
+
+	// /= assignment
+	x = 27;
+	x /= 10;
+	printint(x == 2);
+
+	// %= assignment
+	x = 27;
+	x %= 10;
+	printint(x == 7);
+
+	// assignment evaluates to assigned value
+	// x = 3 is evaluated to 3        
+	int y = x = 3;
+	printint(x == 3);
+	printint(y == 3);
+
+	// order of evaluation.
+	// expressions are evaluated right to left
+	// therefor, x receives the value of 3, and then y receives the value of 7
+	y = 10;
+	x = 2;
+	y -= x += 1;
+	printint(x == 3);
+	printint(y == 7);
+
+	// another example.
+	// y <-- 7
+	// x <-- 3
+	// z <-- 6
+	x = 10;
+	y = 5;
+	int z = 2;
+	z *= x -= y += 2;
+	printint(x == 3);
+	printint(y == 7);
+	printint(z == 6);
+	
+	// support for unary operations ++, --, **, %%
+	x = 10;
+	x++; // increment x by 1
+	printint(x == 11);
+	x--; // decrement x by 1
+	printint(x == 10);
+	x**; // multiply x by 1
+	printint(x == 10);
+	x%%; // set x to become x modulo 1
+	printint(x == 0);
+	
+	// unary postfix ++
+	// in the expression "x++", x becomes 6 but evaluates to 5
+	// you can look at it as "give me the value of x as it is now, and then increment x by 1"
+	// x <-- 6 (evaluates to 5)
+	// y <-- 5
+	x = 5;
+	y = x++;
+	printint(x == 6);
+	printint(y == 5);
+	
+	// unary prefix ++
+	// in the expression "++x", x becomes 6 and evaluates to 6
+	// you can look at it as "increment x by 1, and then give me x"
+	// x <-- 6 (evaluates to 6)
+	// y <-- 6
+	x = 5;
+	y = ++x;
+	printint(x == 6);
+	printint(y == 6);
+
+	// unary postfix --
+	// similar to ++
+	x = 5;
+	y = x--;
+	printint(x == 4);
+	printint(y == 5);
+	
+	// unary prefix --
+	x = 5;
+	y = --x;
+	printint(x == 4);
+	printint(y == 4);
+	
+	// unary multiplicatives ** and %%
+	// similarly to ++ and -- which incremenet and decrement by 1, respectively
+	// ** multiplies by 1
+	// // divides by 1 (supported in compiler, but not in use because it is compiled into a line-comment)
+	// %% modulo by 1
+	x = 5;
+	y = x**;
+	printint(x == 5);
+	printint(y == 5);
+	x = 5;
+	y = **x;
+	printint(x == 5);
+	printint(y == 5);
+	x = 5;
+	y = x%%;
+	printint(x == 0);
+	printint(y == 5);
+	x = 5;
+	y = %%x;
+	printint(x == 0);
+	printint(y == 0);
+	
+	// prefix ! (<not>)
+	// unlike the arithmetic unary operations, <not> does not modify the value of the variable
+	bool t = true;
+	y = !t;
+	printint(t == true);
+	printint(y == false);
+	
+	// additionally, it can be used on literals as well
+	printint(!true == false);
+	
+	
+	}

@@ -1,0 +1,20 @@
+    int pow(int a, int b)
+    {
+        int res = 1;
+        
+        while (b > 0)
+        {
+            res *= a;
+            b--;
+        }
+        
+        return res;
+    }
+    
+    
+    int main()
+    {
+        int x = pow(2,6);
+        printint(x);
+    }
+    
