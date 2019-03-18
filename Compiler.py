@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from Token import Token
 from Lexical_analyzer import analyze
 from collections import namedtuple
@@ -2140,73 +2142,17 @@ class Compiler:
         return self.functions["main"].code
 
 
-def compile_and_run(code):
-    compiler = Compiler(code)
-    code = compiler.compile()
-    # print(code)
-    Interpreter.brainfuck(code)
-
-    # todo list
+def compile(code):
     """
-    x == 1? 2 : 3
-    read char from user
-    structs
-    pass array to function
-    define array inside <for> definition
-    switch-case
-    break (while, for)
-    functions:
-        pass / return char / string
-        returns:
-            from middle of function
-            from inner scope (if/while/{})
-            several returns in one function
-        overloading (2 functions with same name but different parameters. will call the right one)
-        parameter default value: "int foo(int x, int y = 5) {}"
-        recursion
-    use of strings as constant variables. string m = "hello"; print(m); 
-
-
-    make sure that unary operations work on structs    
-    initialization of arrays: int x[3] = {1, 4, 5};
-    pass bool to function
-    
-    bonus - Ook!
-    bonus - take ook to the extreme. a language of only 2 characters. for example, lower L and upper i (or 0,1 or whatever). maybe the user will enter the characters
-
-"""
-
-
-def compile_file(fpath):
-    print("Compiling file '%s'" % fpath)
-
-    with open(fpath, "rt") as f:
-        code = f.read()
-
+    :param code:  C-like code
+    :return code:  Brainfuck code
+    """
     compiler = Compiler(code)
     brainfuck_code = compiler.compile()
-
-    bf_file = fpath + ".bf"
-    with open(bf_file, "wt") as f:
-        f.write(brainfuck_code)
-
-    print("Compiled successfully to '%s'" % bf_file)
+    return brainfuck_code
 
 
 if __name__ == '__main__':
-
-    if len(sys.argv) == 2:
-        compile_file(sys.argv[1])
-        exit(0)
-
-    mycode = """
-
-    int main()
-    {
-        print("Hello World\n");
-    }
-
-    """
-
-    compile_and_run(mycode)
-
+    print("This file cannot be directly run")
+    print("Please import it and use the 'compile' function")
+    print("Which receives a C-like code (string) and returns Brainfuck code (string)")

@@ -3,7 +3,6 @@
     {
         print("Please enter the first number: ");
         int num = readint();
-        print("\n");
         return num;
     }
     
@@ -11,7 +10,6 @@
     {
         print("Please enter the second number: ");
         int num = readint();
-        print("\n");
         return num;
     }
 
@@ -25,7 +23,6 @@
         print("5 - MOD\n");
         
         int op = readint();
-        print("\n");
         return op;
     }
     

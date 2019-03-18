@@ -31,24 +31,41 @@ When they receive a bunch of nonsense which does something meaningful, they will
 
 
 ## How do I use it?
-First of all, write a C-like code (example programs included)
+```
+1. Write a C-like code (example programs included) into a file
+2. Open your favorite command line interface
+3. Run "BF-it.py <path_to_code_file>"
+	This will compile your file and create a .bf file with Brainfuck code
+	(optional parameters: -o for output file, and -r for running the compiled file)
+4. Run "Interpreter.py <path_to_bf_file>"
+	This will execute the Brainfuck code
+```
+Example:
+```
+$ cat helloworld.code
+int main()
+{
+    print("Hello World!\n");
+}
 
-METHOD 1 (my preferred)
-```
-1. Open Compiler.py in your favorite IDE (I use PyCharm)
-2. Edit the __main__ section to contain your code
-3. Run Compiler.py
+$ ./BF-it.py helloworld.code
+Compiling file 'helloworld.code'...
+Compiled successfully to 'helloworld.bf'
+$ ./Interpreter.py helloworld.bf
+Hello World!
 ```
 
-METHOD 2
-```
-1. Open your favorite command line interface (I use Windows's cmd)
-2. Put your code in a file
-3. Run "python Compiler.py <path_to_code_file>"
-	This will compile your file and create a .bf file with brainfuck code
-4. Run "python Interpreter.py <path_to_bf_file>"
-	This will execute the brainfuck code
-```
+For a more interesting example
+1. Take a look at calc.code in the 'examples' directory
+2. Run ```./BF-it.py examples/calc.code -r```
+3. Play around with the interface
+4. If you're brave, take a look at the generated Brainfuck code
+5. If you're very brave, try to understand it (I can't)
+
+## How do I write code?
+Please refer to the 'examples' directory.
+It contains examples and explanations for syntax, operations, flow, and more
+
 
 ## I would like to add a feature / fix a bug
 If you would like to add a feature yourself, perform a pull request and add your changes. I will review them
@@ -72,8 +89,7 @@ If you found a bug, or have an idea for a feature, open an issue
 If you like it, you can donate me some money
 
 If you choose to donate, I will use your money to buy myself non-dairy ice cream
-
-With a flavor of your choosing
+with a flavor of your choosing
 
 And will email you a picture of it as proof
 	

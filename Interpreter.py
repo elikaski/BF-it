@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 
 
@@ -59,7 +61,6 @@ def brainfuck(program):
 
 
 if __name__ == '__main__':
-
     if len(sys.argv) != 2:
         print("Usage: '%s' <path_to_brainfuck_code_file>" % sys.argv[0])
         exit(0)
