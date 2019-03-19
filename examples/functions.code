@@ -1,3 +1,5 @@
+    // note: currently there is no support for recursive functions
+
     // order of parameters evaluation is left to right
     // so, we first evaluate the first parameter, x++. it is evaluated to 5, and updates x to become 6
     // then we evaluate the second parameter, x. which is evaluated to 6
