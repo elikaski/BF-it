@@ -15,15 +15,18 @@ You give it C-like code, and it gives you Brainfuck code with the same functiona
 
 ## Why did you create it?
 There are several reasons why I chose to create this
-```
-1. I always heard that Brainfuck is Turing complete, and therefore as strong as any other language
-	I wanted to put that to the test, and find a concrete proof that it is true
-2. I find it beautiful how a seemingly bunch of nonsense characters can have a logical meaning / functionality
-	I wanted to take it to the extreme
+
+1. I always heard that Brainfuck is Turing complete, and
+   therefore as strong as any other language
+    * I wanted to put that to the test, and find a concrete
+      proof that it is true
+2. I find it beautiful how a seemingly bunch of nonsense
+   characters can have a logical meaning / functionality
+    * I wanted to take it to the extreme
 3. I wanted to practice my developing skills
 4. It seemed to be like a real challenge (and it was!)
 5. But mostly, and most importantly, I did it for teh lulz
-```
+
 
 ## What can I use it for?
 Create a Brainfuck code of your choice, send it to your friends, and tell them to run it (on some online interpreter, for example)
@@ -32,15 +35,17 @@ When they receive a bunch of nonsense which does something meaningful, they will
 
 
 ## How do I use it?
-```
+
 1. Write a C-like code (example programs included) into a file
 2. Open your favorite command line interface
 3. Run "BF-it.py <path_to_code_file>"
-	This will compile your file and create a .bf file with Brainfuck code
-	(optional parameters: -o for output file, and -r for running the compiled file)
-4. Run "Interpreter.py <path_to_bf_file>"
-	This will execute the Brainfuck code
-```
+    * This will compile your file and create a .bf file with
+      Brainfuck code
+    * (optional parameters: `-o` for output file, and `-r`
+      for running the compiled file)
+4. Run "Interpreter.py <path_to_bf_file>`, this will execute
+   the Brainfuck code
+
 Example:
 ```
 $ cat helloworld.code
