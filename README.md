@@ -43,7 +43,7 @@ When they receive a bunch of nonsense which does something meaningful, they will
       Brainfuck code
     * (optional parameters: `-o` for output file, and `-r`
       for running the compiled file)
-4. Run "Interpreter.py <path_to_bf_file>`, this will execute
+4. Run "Interpreter.py <path_to_bf_file>", this will execute
    the Brainfuck code
 
 Example:
