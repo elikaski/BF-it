@@ -38,12 +38,12 @@ When they receive a bunch of nonsense which does something meaningful, they will
 
 1. Write a C-like code (example programs included) into a file
 2. Open your favorite command line interface
-3. Run "BF-it.py <path_to_code_file>"
+3. Run `BF-it.py <path_to_code_file>`
     * This will compile your file and create a .bf file with
       Brainfuck code
     * (optional parameters: `-o` for output file, and `-r`
       for running the compiled file)
-4. Run "Interpreter.py <path_to_bf_file>", this will execute
+4. Run `Interpreter.py <path_to_bf_file>`, this will execute
    the Brainfuck code
 
 Example:
