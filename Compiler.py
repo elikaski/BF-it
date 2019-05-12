@@ -106,6 +106,16 @@ def get_printint_code():
     return code
 
 
+def get_readchar_code():
+    # read input into "return value cell". no need to move the pointer
+    code = ","
+    return code
+
+def get_printchar_code():
+    # point to parameter, output it, and then point back to "return value cell"
+    code = ">.<"
+    return code
+
 def get_offset_to_variable(compiler, ID, current_pointer):
     offset = current_pointer - compiler.get_id_index(ID)
     return offset
@@ -164,10 +174,17 @@ def get_set_cell_value_code(new_value, previous_value, zero_next_cell_if_necessa
 def get_token_code(compiler, token, current_pointer):
     # generate code that evaluates the token at the current pointer, and sets the pointer to point to the next available cell
     if token.type == Token.NUM:
+        value = int(token.data, 16) if token.data.startswith("0x") else int(token.data)
         code = "[-]"  # zero current cell
-        code += get_set_cell_value_code(int(token.data), 0)  # set current cell to the num value
+        code += get_set_cell_value_code(value, 0)  # set current cell to the num value
         code += ">"  # point to the next cell
 
+        return code
+
+    elif token.type == Token.CHAR:
+        code = "[-]"  # zero current cell
+        code += get_set_cell_value_code(ord(token.data), 0)  # set current cell to the char value
+        code += ">"  # point to next cell
         return code
 
     elif token.type == Token.ID:
@@ -965,7 +982,7 @@ class NodeToken(Node):
     def get_code(self, compiler, current_pointer, *args, **kwargs):
         # returns the code that evaluates the parse tree
 
-        if self.token.type in [Token.NUM, Token.ID, Token.TRUE, Token.FALSE]:
+        if self.token.type in [Token.NUM, Token.CHAR, Token.ID, Token.TRUE, Token.FALSE]:
             # its a literal (leaf)
             assert self.left is None and self.right is None
             return get_token_code(compiler, self.token, current_pointer)
@@ -1247,6 +1264,12 @@ class Compiler:
         printint = create_function("printint", Token.VOID, [Token.INT], get_printint_code())
         self.insert_function(printint)
 
+        reachar = create_function("readchar", Token.INT, list(), get_readchar_code())
+        self.insert_function(reachar)
+
+        printchar = create_function("printchar", Token.VOID, [Token.INT], get_printchar_code())
+        self.insert_function(printchar)
+
     def advance_token(self, amount=1):
         self.current_token_index += amount
 
@@ -1366,7 +1389,7 @@ class Compiler:
 
         if self.tokens[index + 2].type == Token.LBRACK:
             self.check_next_tokens_are([Token.LBRACK, Token.NUM, Token.RBRACK], starting_index=index + 1)
-            size = int(self.tokens[index + 3].data)
+            size = int(self.tokens[index + 3].data, 16) if self.tokens[index + 3].data.startswith("0x") else int(self.tokens[index + 3].data)
 
             if advance_tokens:
                 self.advance_token(amount=3)  # skip LBRACK NUM RBRACK
@@ -1488,7 +1511,7 @@ class Compiler:
         return code
 
     def literal(self):
-        # literal: NUM | ID | ID[expression] | TRUE | FALSE | function_call | ( expression )
+        # literal: NUM | CHAR | ID | ID[expression] | TRUE | FALSE | function_call | ( expression )
         token = self.current_token()
 
         if token.type == Token.ID and self.next_token().type == Token.LPAREN:
@@ -1502,7 +1525,7 @@ class Compiler:
 
             return NodeArrayGetElement(token, exp)
 
-        if token.type in [Token.NUM, Token.ID, Token.TRUE, Token.FALSE]:
+        if token.type in [Token.NUM, Token.CHAR, Token.ID, Token.TRUE, Token.FALSE]:
             self.advance_token()
             return NodeToken(token=token)
 
@@ -1698,7 +1721,7 @@ class Compiler:
         multiplicative: unary_prefix ((MUL|DIV|MOD) unary_prefix)*
         unary_prefix:  ( (!)* unary_prefix ) | ( ( ++ | -- ) literal ) | unary_postfix
         unary_postfix: literal ( ++ | -- )?
-        literal: NUM | ID | ( expression )
+        literal: NUM | CHAR | ID | ID[expression] | TRUE | FALSE | function_call | ( expression )
         """
 
         parse_tree = self.expression()

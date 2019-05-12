@@ -17,6 +17,7 @@ def analyze(text):
         ('void',    Token.VOID),
         ('int',     Token.INT),
         ('bool', Token.INT),  # treat bool as int
+        ('char', Token.INT),  # treat char as int
 
         ('true', Token.TRUE),
         ('false', Token.FALSE),
@@ -50,7 +51,9 @@ def analyze(text):
 
         ('([a-zA-Z_][a-zA-Z0-9_]*)',    Token.ID),
         ('(\d+)',     Token.NUM),
+        ('(0x[A-Fa-f\d]+)',     Token.NUM),  # hexadecimal number
         ('\"([^\"])*\"',   Token.STRING),
+        ('\'[^\']\'', Token.CHAR),
         ('//.*\\n', Token.COMMENT),
         ('.',       Token.UNIDENTIFIED)
     ]
@@ -79,7 +82,7 @@ def analyze(text):
             if matched_token == Token.UNIDENTIFIED:
                 raise LexicalErrorException("Unidentified Character '%s' (line %s column %s)" % (text[i], '0', '0')) # todo add line number and column
             if matched_token != Token.WHITESPACE:
-                if matched_token == Token.STRING:
+                if matched_token in [Token.STRING, Token.CHAR]:
                     tokens.append(Token(matched_token, longest_match.group()[1:-1]))  # remove quotes at beginning and end
                 elif matched_token in [Token.NUM, Token.ID, Token.BINOP, Token.RELOP, Token.ASSIGN, Token.UNARY_MULTIPLICATIVE]:
                     tokens.append(Token(matched_token, longest_match.group()))

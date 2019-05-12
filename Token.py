@@ -35,6 +35,7 @@ class Token(object):
     ID = "ID"
     NUM = "NUM"
     STRING = "STRING"
+    CHAR = "CHAR"
 
     PRINT = "PRINT"
     COMMENT = "COMMENT"

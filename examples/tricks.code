@@ -1,3 +1,14 @@
+
+
+void character_trick()
+{
+	printchar(10); // ascii value of \n
+	int myarr[100];
+	myarr['a'] = 42; // 'a' evaluates to a's ascii value = 97
+	printint(myarr[97] == 42);
+	printchar('\n');
+}
+
 int main()
 {
 
@@ -88,5 +99,5 @@ int main()
 	// will result in an infinite loop
 	// because when i=0, and i--; is performed, i becomes 255.
 		
-		
+	character_trick();
 }

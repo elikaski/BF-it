@@ -1,0 +1,44 @@
+
+
+char read_one_char()
+{
+    // take the first char and ignore anything else, until reaching newline
+    char res = readchar(); // support for reading a character
+    while (readchar() != '\n') {} // compare chars
+    return res;
+}
+
+
+bool is_lowercase(char input)
+{
+    return input >= 'a' && input <= 'z';
+}
+
+
+int main()
+{
+    // support for hexadecimal numbers
+    for (int i = 0x20; i < 0x7f; i++)
+    {
+        printchar(i); // support for printing a character
+    }
+	printchar('\n');
+	
+	char mychar = 'x';
+	print("The value of char ");
+	printchar(mychar); // prints the char itself
+	print(" is ");
+	printint(mychar); // prints the char's ascii value
+	print("\n");
+	
+	print("Enter a character to check if it is lowercase\n");
+    while (true)
+    {
+        char input = read_one_char();
+        print("is lowercase? ");
+        printint(is_lowercase(input));
+        print("\n");    
+    }
+}
+
+
