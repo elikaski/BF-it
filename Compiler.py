@@ -1227,8 +1227,8 @@ class NodeArraySetElement(NodeArrayElement):
 
 
 class Compiler:
-    def __init__(self, code):
-        self.tokens = analyze(code)
+    def __init__(self, code, original_code):
+        self.tokens = analyze(code, original_code)
         self.current_token_index = 0
         self.ids_map_list = list()
         self.functions = dict()
@@ -2165,12 +2165,12 @@ class Compiler:
         return self.functions["main"].code
 
 
-def compile(code):
+def compile(code, original_code):
     """
     :param code:  C-like code
     :return code:  Brainfuck code
     """
-    compiler = Compiler(code)
+    compiler = Compiler(code, original_code)
     brainfuck_code = compiler.compile()
     return brainfuck_code
 

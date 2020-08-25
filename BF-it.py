@@ -32,7 +32,10 @@ def compile_file(input_file, output_file, run):
     with open(input_file, "rt", encoding="unicode_escape") as f:
         code = f.read()
 
-    brainfuck_code = Compiler.compile(code)
+    with open(input_file, "rt") as f:
+        original_code = f.read()
+
+    brainfuck_code = Compiler.compile(code, original_code)
     brainfuck_code += "\n"
 
     with open(output_file, "wt") as f:

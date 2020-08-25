@@ -6,11 +6,14 @@ class LexicalErrorException(Exception):
     pass
 
 
-def analyze(text):
+def analyze(text, original_text=None):
     """
     :returns list of tokens in the text
     raises exception in case of lexical error
     """
+
+    if original_text is None:
+        original_text = text
 
     rules = [
         ('\s+', Token.WHITESPACE),
@@ -62,6 +65,11 @@ def analyze(text):
 
     tokens = []
 
+    end = re.compile(r'.*\n')
+    lines = [0]
+    for m in re.finditer(end, original_text):
+        lines.append(m.end())
+
     i = 0
     while i < len(text):
 
@@ -69,18 +77,36 @@ def analyze(text):
         for regex, token_type in rules:
             m = regex.match(text, i)
             if m:
-                current_matches.append((m, token_type))
+                current_matches.append((m, token_type, m.span()))
 
         # pick the token that fits the longest match
         # if tie - pick the one defined first in the rules list
-        longest_match, max_i, matched_token = None, i, None
-        for match, token_type in current_matches:
+        longest_match = None
+        max_i = i
+        matched_token = None
+        match_span = None
+        for match, token_type, span in current_matches:
             if match.end() > max_i:
-                longest_match, max_i, matched_token = match, match.end(), token_type
+                longest_match = match
+                max_i = match.end()
+                matched_token = token_type
+                match_span = span
 
         if matched_token != Token.COMMENT:
             if matched_token == Token.UNIDENTIFIED:
-                raise LexicalErrorException("Unidentified Character '%s' (line %s column %s)" % (text[i], '0', '0')) # todo add line number and column
+                line_no = len(lines)
+                try:
+                    for x in range(len(lines)-1):
+                        item = lines[x]
+                        next_item = lines[x+1]
+                        if max_i in list(range(item, next_item)):
+                            line_no = x+1
+                except StopIteration:
+                    pass
+
+                line_col = match_span[0] - lines[line_no-1]
+
+                raise LexicalErrorException("Unidentified Character '%s' (line %s column %s)" % (text[i], line_no, line_col))
             if matched_token != Token.WHITESPACE:
                 if matched_token in [Token.STRING, Token.CHAR]:
                     tokens.append(Token(matched_token, longest_match.group()[1:-1]))  # remove quotes at beginning and end
