@@ -116,8 +116,8 @@ def get_printchar_code():
     code = ">.<"
     return code
 
-def get_offset_to_variable(compiler, ID, current_pointer):
-    offset = current_pointer - compiler.get_id_index(ID)
+def get_offset_to_variable(compiler, ID_token, current_pointer):
+    offset = current_pointer - compiler.get_id_index(ID_token)
     return offset
 
 
@@ -188,7 +188,7 @@ def get_token_code(compiler, token, current_pointer):
         return code
 
     elif token.type == Token.ID:
-        code = get_copy_from_variable_code(compiler, token.data, current_pointer)
+        code = get_copy_from_variable_code(compiler, token, current_pointer)
         return code
 
     elif token.type == Token.TRUE:
@@ -237,11 +237,11 @@ def get_copy_to_offset_code(offset):
     return code
 
 
-def get_copy_to_variable_code(compiler, ID, current_pointer):
+def get_copy_to_variable_code(compiler, ID_token, current_pointer):
     # returns code that copies value from current pointer to cell of the variable ID
     # after this, the pointer points to the original cell, which remains unchanged
 
-    offset = get_offset_to_variable(compiler, ID, current_pointer)
+    offset = get_offset_to_variable(compiler, ID_token, current_pointer)
     return get_copy_to_offset_code(offset)
 
 
@@ -254,10 +254,10 @@ def get_move_to_return_value_cell_code(current_stack_pointer):
     return get_move_to_offset_code(current_stack_pointer)
 
 
-def get_copy_from_variable_code(compiler, ID, current_pointer):
+def get_copy_from_variable_code(compiler, ID_token, current_pointer):
     #  returns code that copies value from cell of variable ID to current pointer, and then sets the pointer to the next cell
 
-    offset = get_offset_to_variable(compiler, ID, current_pointer)
+    offset = get_offset_to_variable(compiler, ID_token, current_pointer)
     code = "[-]"  # res = 0
     code += ">[-]"  # temp (next cell) = 0
     code += "<" * (offset + 1)  # point to destination cell
@@ -900,11 +900,11 @@ def assign_token_to_op_token(assign_token):
     assert assign_token.data in ["+=", "-=", "*=", "/=", "%="]
 
     assignment_map = {
-        "+=": Token(Token.BINOP, data="+"),
-        "-=": Token(Token.BINOP, data="-"),
-        "*=": Token(Token.BINOP, data="*"),
-        "/=": Token(Token.BINOP, data="/"),
-        "%=": Token(Token.BINOP, data="%"),
+        "+=": Token(Token.BINOP, assign_token.line, assign_token.column, data="+"),
+        "-=": Token(Token.BINOP, assign_token.line, assign_token.column, data="-"),
+        "*=": Token(Token.BINOP, assign_token.line, assign_token.column, data="*"),
+        "/=": Token(Token.BINOP, assign_token.line, assign_token.column, data="/"),
+        "%=": Token(Token.BINOP, assign_token.line, assign_token.column, data="%"),
     }
 
     op_token = assignment_map[assign_token.data]
@@ -1004,7 +1004,7 @@ class NodeToken(Node):
 
                 # create code to copy from evaluated expression to ID's cell
                 code += "<"  # point to evaluated expression cell
-                code += get_copy_to_variable_code(compiler, self.left.token.data, current_pointer)
+                code += get_copy_to_variable_code(compiler, self.left.token, current_pointer)
                 code += ">"  # point to next available cell
 
                 return code
@@ -1019,7 +1019,8 @@ class NodeToken(Node):
                 op_node.right = self.right
 
                 # create a node for id = id + expression
-                assignment_node = NodeToken(left=self.left, token=Token(type=Token.ASSIGN, data="="), right=op_node)
+                assign_token = Token(Token.ASSIGN, self.token.line, self.token.column, data="=")
+                assignment_node = NodeToken(left=self.left, token=assign_token, right=op_node)
 
                 return assignment_node.get_code(compiler, current_pointer)
 
@@ -1047,7 +1048,7 @@ class NodeUnaryPrefix(Node):
                 token_id, index_node = self.node_literal.token_id, self.node_literal.node_expression
                 code = get_move_right_index_cells_code(compiler, current_pointer, index_node)
 
-                offset_to_array = get_offset_to_variable(compiler, token_id.data, current_pointer + 2)
+                offset_to_array = get_offset_to_variable(compiler, token_id, current_pointer + 2)
                 # it is +2 because in "get_move_right_index_cells_code", we moved 2 extra cells to the right, for retrieving the value
 
                 code += get_unary_prefix_op_code(self.token_operation, offset_to_array)
@@ -1066,7 +1067,7 @@ class NodeUnaryPrefix(Node):
             if self.node_literal.token.type != Token.ID:
                 raise BFSemanticError("prefix operator %s cannot be applied to %s, but to a variable only" % (str(self.token_operation), str(self.node_literal.token)))
 
-            offset_to_ID = get_offset_to_variable(compiler, self.node_literal.token.data, current_pointer)
+            offset_to_ID = get_offset_to_variable(compiler, self.node_literal.token, current_pointer)
             return get_unary_prefix_op_code(self.token_operation, offset_to_ID)
 
 
@@ -1085,7 +1086,7 @@ class NodeUnaryPostfix(Node):
             token_id, index_node = self.node_literal.token_id, self.node_literal.node_expression
             code = get_move_right_index_cells_code(compiler, current_pointer, index_node)
 
-            offset_to_array = get_offset_to_variable(compiler, token_id.data, current_pointer + 2)
+            offset_to_array = get_offset_to_variable(compiler, token_id, current_pointer + 2)
             # it is +2 because in "get_move_right_index_cells_code", we moved 2 extra cells to the right, for retrieving the value
 
             code += get_unary_postfix_op_code(self.token_operation, offset_to_array)
@@ -1104,7 +1105,7 @@ class NodeUnaryPostfix(Node):
         if self.node_literal.token.type != Token.ID:
             raise BFSemanticError("postfix operator %s cannot be applied to %s, but to a variable only" % (str(self.token_operation), str(self.node_literal.token)))
 
-        offset_to_ID = get_offset_to_variable(compiler, self.node_literal.token.data, current_pointer)
+        offset_to_ID = get_offset_to_variable(compiler, self.node_literal.token, current_pointer)
         return get_unary_postfix_op_code(self.token_operation, offset_to_ID)
 
 
@@ -1143,7 +1144,7 @@ class NodeArrayGetElement(NodeArrayElement):
 
     def get_code(self, compiler, current_pointer, *args, **kwargs):
         code = get_move_right_index_cells_code(compiler, current_pointer, self.node_expression)
-        code += get_copy_from_variable_code(compiler, self.token_id.data, current_pointer + 2)
+        code += get_copy_from_variable_code(compiler, self.token_id, current_pointer + 2)
         # it is +2 because in "get_move_right_index_cells_code", we moved 2 extra cells to the right, for retrieving the value
 
         code += "<"  # point to res
@@ -1170,7 +1171,7 @@ class NodeArraySetElement(NodeArrayElement):
             # id[exp] += expression
             assert assign_token.data in ["+=", "-=", "*=", "/=", "%="]
 
-            self.assign_token = Token(Token.ASSIGN, data="=")
+            self.assign_token = Token(Token.ASSIGN, assign_token.line, assign_token.column, data="=")
 
             # create a node for id[exp] + expression
             op_node = assign_token_to_op_token(assign_token)
@@ -1203,7 +1204,7 @@ class NodeArraySetElement(NodeArrayElement):
         code += "]"  # end while
 
         code += ">>"  # point to value
-        code += get_copy_to_variable_code(compiler, self.token_id.data, current_pointer + 2)
+        code += get_copy_to_variable_code(compiler, self.token_id, current_pointer + 2)
         # it is +2 because we moved 2 extra cells to the right, for pointing to value
 
         # layout: 0, idx, value (pointing to value)
@@ -1249,13 +1250,14 @@ class Compiler:
         functions is a dict of string function_name --> function named tuple
         """
 
-    def get_id_index(self, ID):
+    def get_id_index(self, ID_token):
+        ID = ID_token.data
         # given an id, goes through the ids map list and returns the index of the first ID it finds
         for i in range(len(self.ids_map_list)):
             ids_map = self.ids_map_list[i].IDs_dict
             if ID in ids_map:
                 return ids_map[ID].cell_index
-        raise BFSemanticError("ID '%s' does not exist" % ID)
+        raise BFSemanticError("'%s' does not exist" % str(ID_token))
 
     def insert_library_functions(self): # todo put print here too (and remove it from the TOKEN class)
         readint = create_function("readint", Token.INT, list(), get_readint_code())
@@ -1306,7 +1308,7 @@ class Compiler:
             inc = Token.LBRACK
             dec = Token.RBRACK
         else:
-            raise NotImplementedError(token_to_match.type)
+            raise NotImplementedError(token_to_match)
 
         i = starting_index
         cnt = 0
@@ -1321,7 +1323,7 @@ class Compiler:
 
             i += 1
 
-        raise Exception("did not find matching %s for %s at index %s" % (dec, inc, str(starting_index)))
+        raise Exception("did not find matching %s for %s" % (dec, str(token_to_match)))
 
     def add_ids_map(self):
         # first cell (index 0) is the return_value cell. every function assumes that such a cell exists.
@@ -1473,13 +1475,14 @@ class Compiler:
         if ID in self.ids_map_list[0].IDs_dict:
             raise BFSemanticError("ID %s is already defined" % ID)
 
-    def check_function_exists(self, function_name, parameters_amount):
+    def check_function_exists(self, function_token, parameters_amount):
+        function_name = function_token.data
         if function_name not in self.functions:
-            raise BFSemanticError("Function '%s' is undefined" % function_name)
+            raise BFSemanticError("Function '%s' is undefined" % str(function_token))
 
         function = self.functions[function_name]
         if len(function.parameters) != parameters_amount:
-            raise BFSemanticError("Function '%s' has %s parameters (called it with %s)" % (function.name, len(function.parameters), parameters_amount))
+            raise BFSemanticError("Function '%s' has %s parameters (called it with %s parameters)" % (str(function_token), len(function.parameters), parameters_amount))
 
     # =================
     # compilation rules
@@ -1491,14 +1494,15 @@ class Compiler:
         # returns function's CODE
 
         assert self.current_token().type == Token.ID
-        function_name = self.current_token().data
+        function_token = self.current_token()
+        function_name = function_token.data
         self.advance_token()  # skip ID
 
         self.increase_stack_pointer()  # evaluate expression list at one cell ahead, (after return_value_cell)
         parameters_code, parameters_amount = self.compile_expression_list()
         self.decrease_stack_pointer()
 
-        self.check_function_exists(function_name, parameters_amount)
+        self.check_function_exists(function_token, parameters_amount)
         function_to_call = self.functions[function_name]
 
         code = '[-]>'  # return_value_cell=0
@@ -2055,7 +2059,7 @@ class Compiler:
             self.advance_token()  # skip ;
             return ""
 
-        raise NotImplementedError(token.type)
+        raise NotImplementedError(token)
 
     def compile_scope_statements(self):
         tokens = self.tokens
@@ -2071,7 +2075,7 @@ class Compiler:
                 code += self.compile_statement()
 
         # should never get here
-        raise BFSyntaxError("expected } after the last token in scope " + tokens[-1].type)
+        raise BFSyntaxError("expected } after the last token in scope " + str(tokens[-1]))
 
     def compile_scope(self):
         assert self.current_token().type == Token.LBRACE
@@ -2160,7 +2164,7 @@ class Compiler:
             untouched_tokens = [str(t) for t in self.tokens[self.current_token_index:]]
             raise BFSyntaxError("Did not reach the end of the code (starting at index %s):\n%s" % (str(self.current_token_index+1), untouched_tokens))
 
-        self.check_function_exists("main", 0)
+        self.check_function_exists(Token(Token.ID, 0, 0, "main"), 0)
 
         return self.functions["main"].code
 

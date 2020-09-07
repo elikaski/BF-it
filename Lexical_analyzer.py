@@ -53,7 +53,7 @@ def analyze(text):
         ('(\d+)',     Token.NUM),
         ('(0x[A-Fa-f\d]+)',     Token.NUM),  # hexadecimal number
         ('\"([^\"])*\"',   Token.STRING),
-        ('\'[^\']\'', Token.CHAR),
+        ('\'(\\\\)?[^\']\'', Token.CHAR),
         ('//.*\\n', Token.COMMENT),
         ('.',       Token.UNIDENTIFIED)
     ]
@@ -61,6 +61,10 @@ def analyze(text):
     rules = [(re.compile(r), t) for r, t in rules]
 
     tokens = []
+
+    # create a mapping of [line number] to [offset of that line from the beginning of the text]
+    newline = re.compile('\n')
+    lines = [0] + [m.end() for m in re.finditer(newline, text)]
 
     i = 0
     while i < len(text):
@@ -78,16 +82,26 @@ def analyze(text):
             if match.end() > max_i:
                 longest_match, max_i, matched_token = match, match.end(), token_type
 
+        # calculate line and column
+        line, column = None, None
+        for line_idx in range(len(lines)-1):
+            if lines[line_idx] <= longest_match.start() < lines[line_idx+1]:
+                line, column = line_idx+1, (longest_match.start() - lines[line_idx])+1  # humans count from 1 :)
+                break
+        if not line:
+            line, column = len(lines), (longest_match.start() - lines[-1])+1
+
         if matched_token != Token.COMMENT:
             if matched_token == Token.UNIDENTIFIED:
-                raise LexicalErrorException("Unidentified Character '%s' (line %s column %s)" % (text[i], '0', '0')) # todo add line number and column
+                raise LexicalErrorException("Unidentified Character '%s' (line %s column %s)" % (text[i], line, column))
             if matched_token != Token.WHITESPACE:
                 if matched_token in [Token.STRING, Token.CHAR]:
-                    tokens.append(Token(matched_token, longest_match.group()[1:-1]))  # remove quotes at beginning and end
+                    # remove quotes at beginning and end, un-escape characters
+                    tokens.append(Token(matched_token, line, column, longest_match.group()[1:-1].encode("utf8").decode("unicode_escape")))
                 elif matched_token in [Token.NUM, Token.ID, Token.BINOP, Token.RELOP, Token.ASSIGN, Token.UNARY_MULTIPLICATIVE]:
-                    tokens.append(Token(matched_token, longest_match.group()))
+                    tokens.append(Token(matched_token, line, column, longest_match.group()))
                 else:
-                    tokens.append(Token(matched_token))
+                    tokens.append(Token(matched_token, line, column))
         i = longest_match.end()
 
     return tokens

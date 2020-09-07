@@ -29,8 +29,8 @@ def process_args():
 def compile_file(input_file, output_file, run):
     print("Compiling file '%s'..." % input_file)
 
-    with open(input_file, "rt", encoding="unicode_escape") as f:
-        code = f.read()
+    with open(input_file, "rb") as f:
+        code = f.read().decode("utf8")
 
     brainfuck_code = Compiler.compile(code)
     brainfuck_code += "\n"
