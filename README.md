@@ -57,14 +57,23 @@ int main()
 $ ./BF-it.py helloworld.code
 Compiling file 'helloworld.code'...
 Compiled successfully to 'helloworld.bf'
+$ cat helloworld.bf 
+>[-]>[-]<>++++++++[-<+++++++++>]<.>++++[-<+++++++>]
+<+.+++++++..+++.>++++++[-<------------->]<-.>+++++[
+-<+++++++++++>]<.>++++[-<++++++>]<.+++.------.-----
+---.>++++++[-<----------->]<-.>+++[-<------->]<--.<
+
 $ ./Interpreter.py helloworld.bf
 Hello World!
 ```
 
-For a more interesting example,
-1. Take a look at calc.code in the 'examples' directory
-2. Run ```./BF-it.py examples/calc.code -r```
-3. Play around with the interface
+For a more interesting example, check out Tic-Tac-Toe!
+
+<img alt="Tic-Tac-Toe" src="images/tic tac toe.gif?sanitize=true"><br/>
+
+1. Take a look at tic_tac_toe.code in the 'examples/games' directory
+2. Run ```./BF-it.py examples/games/tic_tac_toe.code -r```
+3. Play around
 4. If you're brave, take a look at the generated Brainfuck code
 5. If you're very brave, try to understand it (I can't)
 
@@ -89,16 +98,4 @@ If you found a bug, or have an idea for a feature, open an issue
 * https://introcs.cs.princeton.edu/java/11precedence/ for operator precedence
 * https://logomakr.com/ for creating a logo
 * https://www.youtube.com/ for setting the mood
-
-	
-	
-## I like it! how can I give you money?
-If you like it, you can donate me some money
-
-If you choose to donate, I will use your money to buy myself non-dairy ice cream
-with a flavor of your choosing
-
-And will email you a picture of it as proof
-	
-[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=F9A8U8H2F7QKJ)
 

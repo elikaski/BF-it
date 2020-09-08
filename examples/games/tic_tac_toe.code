@@ -1,0 +1,118 @@
+// Tic-Tac-Toe
+
+// Board looks like:
+//  1 | 2 | 3
+//  ---------
+//  4 | 5 | 6
+//  ---------
+//  7 | 8 | 9
+
+
+char read_one_char() {
+    // take the first char and ignore anything else, until reaching newline
+    char res = readchar();
+    while (readchar() != '\n') {}
+    return res;
+}
+
+
+bool ask_play_again() {
+    bool input_valid = false;
+    bool result;
+    while (!input_valid) {
+        print("Would you like to play again? Y/N: ");
+        char input = read_one_char();
+        if (input == 'Y' || input == 'y') {
+            input_valid = true;
+            result = true;
+        }
+        if (input == 'N' || input == 'n') {
+            input_valid = true;
+            result = false;
+        }
+    }
+    return result;
+}
+
+
+
+int main() {
+    char board[9];
+    bool still_playing = true;
+    int move = 0;
+
+    while (still_playing) {
+        bool game_over = false;
+        bool player_X_turn = true;
+        int moves_so_far = 0;
+
+        // ---------- init board ----------
+        for (int i = 0; i < 9; i++) {
+            board[i] = ' ';
+        }
+        // ---------- print board ----------
+        for (int i = 0; i < 9; i++) {
+            printchar(board[i]);
+            if (i % 3 == 2) {print("\n---------\n");} else {print(" | ");}
+        }
+
+        while (!game_over) {
+            // ---------- get next move ----------
+            while (move < 1 || move > 9 || board[move-1] != ' ') { // humans count from 1 :)
+                print("Player ");
+                if (player_X_turn) {printchar('X');} else {printchar('O');}
+                print(" turn:\n");
+                move = readint();
+            }
+            if (player_X_turn) {board[move-1]='X';} else {board[move-1]='O';}
+            move = 0;
+            player_X_turn = !player_X_turn;
+            moves_so_far++;
+
+            // ---------- print board ----------
+            for (int i = 0; i < 9; i++) {
+                printchar(board[i]);
+                if (i % 3 == 2) {print("\n---------\n");} else {print(" | ");}
+            }
+
+            // ---------- check win or tie ----------
+            char winner = ' ';
+            // check rows
+            for (int row = 0; row < 3; row++) {
+                if (board[row*3] == board[row*3+1] && board[row*3] == board[row*3+2] && board[row*3] != ' ') {
+                    winner = board[row*3];
+                }
+            }
+            // check columns
+            for (int col = 0; col < 3; col++) {
+                if (board[col] == board[col+3] && board[col] == board[col+6] && board[col] != ' ') {
+                    winner = board[col];
+                }
+            }
+            // check diagonals
+            if (((board[0] == board[4] && board[0] == board[8]) || (board[2] == board[4] && board[2] == board[6])) && (board[4] != ' ')) {
+                winner = board[4];
+            }
+
+            // ---------- announce result ----------
+            if (winner != ' ') {
+                print("Player ");
+                printchar(winner);
+                print(" Won!\n");
+                game_over = true;
+            } else {
+                if (moves_so_far == 9) {
+                print("Game is a tie!\n");
+                game_over = true;
+                }
+            }
+        }
+
+        if (ask_play_again() == true) {
+            print("Great! Let's start a new game...\n");
+        } else {
+            still_playing = false;
+        }
+    }
+    print("Goodbye :)\n");
+}
