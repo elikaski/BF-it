@@ -3,8 +3,7 @@
 from Token import Token
 from Lexical_analyzer import analyze
 from collections import namedtuple
-import sys
-import Interpreter
+from functools import reduce
 
 ADD_DIVISION_BY_ZERO_CHECK = True
 
@@ -29,13 +28,14 @@ def create_function(name, type, parameters, code):
     return function
 
 
-def create_variable(name, type, size):
+def create_variable(name, type, dimensions):
     # return variable named tuple
     variable = namedtuple("variable", ["name", "type", "size", "cell_index"])
 
     variable.name = name
     variable. type = type
-    variable.size = size
+    variable.dimensions = dimensions  # list of array dimensions sizes (for non-arrays it will be [1])
+    variable.size = reduce(lambda x,y: x*y, dimensions)  # total variable size
     variable.cell_index = None  # will be updated when we insert this variable into an ids map
 
     return variable
@@ -1137,6 +1137,12 @@ class NodeArrayElement(Node):
 
 
 class NodeArrayGetElement(NodeArrayElement):
+    """
+    class for getting element of a one-dimensional array
+    it receives an expression, indicating the required index
+    and returns a code that gets that element
+    """
+
     def __init__(self, token_id, node_expression):
         Node.__init__(self)
         self.token_id = token_id
@@ -1156,6 +1162,15 @@ class NodeArrayGetElement(NodeArrayElement):
 
 
 class NodeArraySetElement(NodeArrayElement):
+    """
+    class for setting element of a one-dimensional array
+    it receives:
+    1. an expression, indicating the required index
+    2. assignment operator (=|+=|-=|*=|/=|%=)
+    3. an expression, indicating the value to be used for the assignment
+    and returns a code that gets that element
+    """
+
     def __init__(self, token_id, node_expression_index, assign_token, node_expression_value):
         Node.__init__(self)
         self.token_id = token_id
@@ -1250,14 +1265,94 @@ class Compiler:
         functions is a dict of string function_name --> function named tuple
         """
 
-    def get_id_index(self, ID_token):
+    def get_variable_from_ID_token(self, ID_token):
         ID = ID_token.data
         # given an id, goes through the ids map list and returns the index of the first ID it finds
         for i in range(len(self.ids_map_list)):
             ids_map = self.ids_map_list[i].IDs_dict
             if ID in ids_map:
-                return ids_map[ID].cell_index
+                return ids_map[ID]
         raise BFSemanticError("'%s' does not exist" % str(ID_token))
+
+    def get_array_index_expression(self):
+        """
+        the idea - address the multi-dimensional array as a one-dimensional array
+        calculate the appropriate index in the one-dimensional array
+        by multiplying the index in each dimension by its size (i.e the multiplication of all sizes of the following dimensions)
+        and then using the NodeArrayGetElement/NodeArraySetElement class which gets an element in a one-dimensional array
+
+        in order to do that, we need to create our own sub-tree of multiplications,
+        and pass it as the "index expression"
+
+        e.g if the array is: arr[10][5][2] and we want to get arr[4][3][1]
+        then we want to calculate index = (4*(5*2) + 3*(2) + 1)
+        """
+        ID_token = self.current_token()
+        self.advance_token(2)  # skip ID, LBRACK
+        first_index_expression = index_expression = self.expression()  # first dimension
+        self.check_current_tokens_are([Token.RBRACK])
+        self.advance_token()  # skip RBRACK
+
+        # now handle the next dimensions (if multi-dimensional array)
+        dimensions = self.get_variable_dimensions(ID_token)
+        if len(dimensions) > 1:
+            multiply_token = Token(Token.BINOP, ID_token.line, ID_token.column, data="*")
+            add_token = Token(Token.BINOP, ID_token.line, ID_token.column, data="+")
+
+            # multiply by next dimensions sizes
+            multiply_amount = reduce(lambda x, y: x * y, dimensions[1:])  # size of the following dimensions
+            node_token_multiply_amount = NodeToken(token=Token(Token.NUM, ID_token.line, ID_token.column, data=str(multiply_amount)))
+            index_expression = NodeToken(token=multiply_token, left=first_index_expression, right=node_token_multiply_amount)
+
+            # handle next dimensions
+            dimension = 1
+            while dimension < len(dimensions):
+                if self.current_token().type != Token.LBRACK:  # too few indexes given...
+                    if dimension == 1:
+                        return first_index_expression  # allow use of only one dimension for multi-dimensional array
+                    raise BFSemanticError("%s is a %s-dimensional array, but only %s dimension(s) given as index" %
+                                          (str(ID_token), len(dimensions), dimension))
+                self.check_current_tokens_are([Token.LBRACK])
+                self.advance_token()  # skip LBRACK
+                exp = self.expression()
+
+                self.check_current_tokens_are([Token.RBRACK])
+                self.advance_token()  # skip RBRACK
+
+                # current_dimension_index *= size_of_following_dimensions
+                if dimension + 1 < len(dimensions):  # not last dimension - need to multiply and add
+                    multiply_amount = reduce(lambda x, y: x * y, dimensions[dimension + 1:])  # size of the following dimensions
+                    node_token_multiply_amount = NodeToken(token=Token(Token.NUM, ID_token.line, ID_token.column, data=str(multiply_amount)))
+                    multiply_node = NodeToken(token=multiply_token, left=exp, right=node_token_multiply_amount)
+
+                    # prev_dimensions_index += current_dimension_index
+                    index_expression = NodeToken(token=add_token, left=index_expression, right=multiply_node)
+                else:  # last dimension - no need to multiply, just add
+                    index_expression = NodeToken(token=add_token, left=index_expression, right=exp)
+                dimension += 1
+
+        if self.current_token().type == Token.LBRACK:  # too many indexes given...
+            raise BFSemanticError("%s is a %s-dimensional array. Unexpected %s" %
+                                  (str(ID_token), len(dimensions), self.current_token()))
+        return index_expression
+
+    def get_token_after_array_access(self):
+        # in case we have: "ID[a][b][c]...[z] next_token", return "next_token"
+        self.check_current_tokens_are([Token.ID, Token.LBRACK])
+        idx = self.current_token_index + 1  # point to LBRACK
+        while self.token_at_index(idx).type == Token.LBRACK:
+            idx = self.find_matching(idx)  # point to RBRACK
+            idx += 1  # advance to one after the RBRACK
+
+        return self.token_at_index(idx)
+
+    def get_variable_dimensions(self, ID_token):
+        variable = self.get_variable_from_ID_token(ID_token)
+        return variable.dimensions
+
+    def get_id_index(self, ID_token):
+        variable = self.get_variable_from_ID_token(ID_token)
+        return variable.cell_index
 
     def insert_library_functions(self): # todo put print here too (and remove it from the TOKEN class)
         readint = create_function("readint", Token.INT, list(), get_readint_code())
@@ -1389,16 +1484,19 @@ class Compiler:
         if advance_tokens:
             self.advance_token(amount=2)  # skip INT ID
 
-        if self.tokens[index + 2].type == Token.LBRACK:
-            self.check_next_tokens_are([Token.LBRACK, Token.NUM, Token.RBRACK], starting_index=index + 1)
-            size = int(self.tokens[index + 3].data, 16) if self.tokens[index + 3].data.startswith("0x") else int(self.tokens[index + 3].data)
+        if self.tokens[index + 2].type == Token.LBRACK:  # array (support multi-dimensional arrays)
+            dimensions = []  # element[i] holds the size of dimension[i]
+            while self.tokens[index + 2].type == Token.LBRACK:
+                self.check_next_tokens_are([Token.LBRACK, Token.NUM, Token.RBRACK], starting_index=index + 1)
+                dimensions.append(int(self.tokens[index + 3].data, 16) if self.tokens[index + 3].data.startswith("0x") else int(self.tokens[index + 3].data))
 
-            if advance_tokens:
-                self.advance_token(amount=3)  # skip LBRACK NUM RBRACK
+                if advance_tokens:
+                    self.advance_token(amount=3)  # skip LBRACK NUM RBRACK
+                index += 3
         else:
-            size = 1
+            dimensions = [1]
 
-        variable = create_variable(ID, type, size)
+        variable = create_variable(ID, type, dimensions)
         return variable
 
     def insert_scope_variables_into_ids_map(self):
@@ -1515,26 +1613,22 @@ class Compiler:
         return code
 
     def literal(self):
-        # literal: NUM | CHAR | ID | ID[expression] | TRUE | FALSE | function_call | ( expression )
+        # literal: NUM | CHAR | ID | ID (LBRACK expression RBRACK)+ | TRUE | FALSE | function_call | ( expression )
         token = self.current_token()
 
         if token.type == Token.ID and self.next_token().type == Token.LPAREN:
             return NodeFunctionCall(code=self.function_call())
 
-        if token.type == Token.ID and self.next_token().type == Token.LBRACK:
-            self.advance_token(amount=2)  # skip ID LBRACK
-            exp = self.expression()
-            self.check_current_tokens_are([Token.RBRACK])
-            self.advance_token()  # skip RBRACK
-
-            return NodeArrayGetElement(token, exp)
+        if token.type == Token.ID and self.next_token().type == Token.LBRACK:  # array - ID(LBRACK expression RBRACK)+
+            index_expression = self.get_array_index_expression()
+            return NodeArrayGetElement(token, index_expression)
 
         if token.type in [Token.NUM, Token.CHAR, Token.ID, Token.TRUE, Token.FALSE]:
             self.advance_token()
             return NodeToken(token=token)
 
         if token.type != Token.LPAREN:
-            raise BFSyntaxError("Unexpected '%s'. expected literal (NUM | ID | ID[expression] | TRUE | FALSE | function_call | ( expression ))" % str(token))
+            raise BFSyntaxError("Unexpected '%s'. expected literal (NUM | ID | ID(LBRACK expression RBRACK)+ | TRUE | FALSE | function_call | ( expression ))" % str(token))
 
         # ( expression )
         self.check_current_tokens_are([Token.LPAREN])
@@ -1662,7 +1756,7 @@ class Compiler:
         return n
 
     def assignment(self):
-        # assignment: ID ASSIGN expression | ID LBRACK expression RBRACK ASSIGN expression | logical_or
+        # assignment: ID ASSIGN expression | ID (LBRACK expression RBRACK)+ ASSIGN expression | logical_or
 
         if self.current_token().type == Token.ID and self.next_token().type == Token.ASSIGN:
             # ID ASSIGN expression
@@ -1677,17 +1771,16 @@ class Compiler:
             return new_node
 
         elif self.current_token().type == Token.ID and self.next_token().type == Token.LBRACK and \
-                self.tokens[self.find_matching(self.current_token_index+1)+1].type == Token.ASSIGN:
-            # ID LBRACK expression1 RBRACK ASSIGN expression2
+                self.get_token_after_array_access().type == Token.ASSIGN:
+            # ID (LBRACK expression RBRACK)+ ASSIGN value_expression
             id_token = self.current_token()
-            self.advance_token(amount=2)  # skip ID [
-            exp1 = self.expression()
-            self.check_current_tokens_are([Token.RBRACK, Token.ASSIGN])
-            assign_token = self.next_token()
-            self.advance_token(amount=2)  # skip ] ASSIGN
-            exp2 = self.expression()
+            index_expression = self.get_array_index_expression()
+            self.check_current_tokens_are([Token.ASSIGN])
+            assign_token = self.current_token()
+            self.advance_token()  # skip ASSIGN
+            value_expression = self.expression()
 
-            return NodeArraySetElement(id_token, exp1, assign_token, exp2)
+            return NodeArraySetElement(id_token, index_expression, assign_token, value_expression)
         else:
             # logical or
             return self.logical_or()
@@ -1745,7 +1838,7 @@ class Compiler:
         token = self.current_token()
         while token.type != Token.RPAREN:
             if token.type != Token.INT:
-                raise BFSemanticError("Only int type is supported as a function parameter, and not '%s'" % token.type)
+                raise BFSemanticError("Only int type is supported as a function parameter, and not '%s'" % str(token))
 
             parameter = self.create_variable_from_definition(advance_tokens=True)
             res.append(parameter)
@@ -2017,8 +2110,13 @@ class Compiler:
                 self.advance_token(2)  # skip ID SEMICOLON
                 return ''  # no code is generated here. code was generated for defining this variable when we entered the scope
 
-            elif self.next_token().type == Token.LBRACK and self.next_token(next_amount=4).type == Token.SEMICOLON:  # INT ID LBRACK NUM RBRACK SEMICOLON
-                self.advance_token(5)  # skip ID LBRACK NUM RBRACK SEMICOLON
+            elif self.next_token().type == Token.LBRACK:  # INT ID (LBRACK NUM RBRACK)+ SEMICOLON
+                self.advance_token(1)  # skip ID
+                while self.current_token().type == Token.LBRACK:
+                    self.check_current_tokens_are([Token.LBRACK, Token.NUM, Token.RBRACK])
+                    self.advance_token(3)  # skip LBRACK, NUM, RBRACK
+                self.check_current_tokens_are([Token.SEMICOLON])
+                self.advance_token(1)  # skip SEMICOLON
                 return ''  # no code is generated here. code was generated for defining this variable when we entered the scope
 
             else:
@@ -2029,7 +2127,7 @@ class Compiler:
 
         elif token.type == Token.ID:
             if self.next_token().type in [Token.ASSIGN, Token.LBRACK, Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE]:
-                # ID ASSIGN expression; or ID[expression] ASSIGN expression; or ID++;
+                # ID ASSIGN expression; or ID([expression])+ ASSIGN expression; or ID++;
                 return self.compile_expression_as_statement()
             elif self.next_token().type == Token.LPAREN:  # ID(...);  (function call)
                 return self.compile_function_call_statement()

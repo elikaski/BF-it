@@ -37,7 +37,7 @@ bool ask_play_again() {
 
 
 int main() {
-    char board[9];
+    char board[3][3];
     bool still_playing = true;
     int move = 0;
 
@@ -79,19 +79,19 @@ int main() {
             char winner = ' ';
             // check rows
             for (int row = 0; row < 3; row++) {
-                if (board[row*3] == board[row*3+1] && board[row*3] == board[row*3+2] && board[row*3] != ' ') {
-                    winner = board[row*3];
+                if (board[row][0] == board[row][1] && board[row][0] == board[row][2] && board[row][0] != ' ') {
+                    winner = board[row][0];
                 }
             }
             // check columns
             for (int col = 0; col < 3; col++) {
-                if (board[col] == board[col+3] && board[col] == board[col+6] && board[col] != ' ') {
-                    winner = board[col];
+                if (board[0][col] == board[1][col] && board[0][col] == board[2][col] && board[0][col] != ' ') {
+                    winner = board[0][col];
                 }
             }
             // check diagonals
-            if (((board[0] == board[4] && board[0] == board[8]) || (board[2] == board[4] && board[2] == board[6])) && (board[4] != ' ')) {
-                winner = board[4];
+            if (((board[0][0] == board[1][1] && board[0][0] == board[2][2]) || (board[0][2] == board[1][1] && board[0][2] == board[2][0])) && (board[1][1] != ' ')) {
+                winner = board[1][1];
             }
 
             // ---------- announce result ----------

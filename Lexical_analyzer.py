@@ -54,7 +54,7 @@ def analyze(text):
         ('(0x[A-Fa-f\d]+)',     Token.NUM),  # hexadecimal number
         ('\"([^\"])*\"',   Token.STRING),
         ('\'(\\\\)?[^\']\'', Token.CHAR),
-        ('//.*\\n', Token.COMMENT),
+        ('//.*(\\n|$)', Token.COMMENT),
         ('.',       Token.UNIDENTIFIED)
     ]
 

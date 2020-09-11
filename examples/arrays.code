@@ -1,0 +1,69 @@
+
+void arrays_one_dimensional() {
+    // can define arrays
+	int arr[10];
+	for (int i = 0; i < 10; i++) {
+		arr[i] = i * i;
+	}
+
+	for (int i = 0; i < 10; i++) {
+		printint(arr[i]);
+		print(", ");
+	}
+	print("\n");
+}
+
+void arrays_multi_dimensional() {
+    // can define multi-dimension arrays
+    int arr[3][3][3];
+    // arrays are "allocated" as a continuous block of cells
+
+    for (int i = 0; i < 3*3*3; i++) {
+        // can read / write using just one index
+        arr[i] = i;
+    }
+
+    for (int i = 0; i < 3; i++){
+        for (int j = 0; j < 3; j++){
+            for (int k = 0; k < 3; k++){
+            // can read / write using all dimensions indexes
+            printint(arr[i][j][k]);
+            print(", ");
+            }
+        }
+    }
+    print("\n");
+}
+
+void order_of_evaluation() {
+    int arr[10];
+    int x = 5;
+
+    // similarly to C, we first evaluate the index, and then the value
+    arr[x++] = x;
+    printint(arr[5]==6);
+
+
+    int arr2[4][4];
+    int y = 1;
+
+    // same for multi-dimensional arrays, and indexes are evaluated left to right
+    arr2[y++][y++] = y;
+    printint(arr2[1][2] == 3);
+
+    // same for reading
+    y = 1;
+    printint(arr2[y++][y++] == 3);
+
+    // just for fun
+    y = 0;
+    arr2[2][3] = 13;
+    arr2[y++][y++] = arr2[y++][y++];
+    printint(arr2[0][1] == 13);
+}
+
+int main() {
+    arrays_one_dimensional();
+    arrays_multi_dimensional();
+    order_of_evaluation();
+}
