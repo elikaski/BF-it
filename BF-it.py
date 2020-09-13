@@ -4,6 +4,7 @@ import argparse
 import os
 import Compiler
 import Interpreter
+import Minify
 
 
 def process_args():
@@ -34,6 +35,8 @@ def compile_file(input_file, output_file, run):
 
     brainfuck_code = Compiler.compile(code)
     brainfuck_code += "\n"
+
+    brainfuck_code = Minify.minify(brainfuck_code)
 
     with open(output_file, "wt") as f:
         f.write(brainfuck_code)
