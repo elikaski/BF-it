@@ -121,7 +121,7 @@ def get_offset_to_variable(compiler, ID_token, current_pointer):
     return offset
 
 
-def get_set_cell_value_code(new_value, previous_value, zero_next_cell_if_necessary=True):
+def get_set_cell_value_code(new_value, previous_value, zero_next_cell_if_necessary=True, is_printing=False, previous_loop_value=0):
     # this function returns a code that sets the current cell's value to new_value,
     # given that its previous value is previous_value
 
@@ -157,18 +157,50 @@ def get_set_cell_value_code(new_value, previous_value, zero_next_cell_if_necessa
         return min_a, min_b, min_c
 
     a, b, c = get_abc(offset)
+
+    loop_offset = a - previous_loop_value
+    loop_char = "+" if loop_offset > 0 else "-"
+    loop_offset = abs(loop_offset)
+
     looped = ">"  # point to next cell (loop counter)
     if zero_next_cell_if_necessary:
         looped += "[-]"  # zero it if necessary
-    looped += "+" * a  # set loop counter
+    looped += loop_char * loop_offset  # set loop counter
     looped += "[-<" + char * b + ">]"  # sub 1 from counter, perform b actions
     looped += "<"  # point to "character" cell
     looped += char * c  # c more actions
 
+    if is_printing:
+        loop_val_print = ">"  # point to next cell (loop counter)
+        if zero_next_cell_if_necessary:
+            loop_val_print += "[-]"  # zero it if necessary
+
+        loop_offset = new_value - previous_loop_value
+        loop_char = "+" if loop_offset > 0 else "-"
+        loop_offset = abs(loop_offset)
+
+        loop_val_print += loop_char * loop_offset
+
+        zero_loop_val_print = ">"  # point to next cell (loop counter)
+        zero_loop_val_print += "[-]"
+
+        loop_offset = new_value
+        loop_char = "+" if loop_offset > 0 else "-"
+        loop_offset = abs(loop_offset)
+
+        zero_loop_val_print += loop_char * loop_offset
+
+        if len(zero_loop_val_print) < len(loop_val_print):
+            loop_val_print = zero_loop_val_print # Replace with the smaller one
+
+        if len(loop_val_print) < len(looped):
+            if len(loop_val_print) < len(naive):
+                return (loop_val_print, 1)
+
     if len(naive) < len(looped):
-        return naive
+        return (naive, 0)
     else:
-        return looped
+        return (looped, 0)
 
 
 def get_token_code(compiler, token, current_pointer):
@@ -176,14 +208,14 @@ def get_token_code(compiler, token, current_pointer):
     if token.type == Token.NUM:
         value = int(token.data, 16) if token.data.startswith("0x") else int(token.data)
         code = "[-]"  # zero current cell
-        code += get_set_cell_value_code(value, 0)  # set current cell to the num value
+        code += get_set_cell_value_code(value, 0)[0]  # set current cell to the num value
         code += ">"  # point to the next cell
 
         return code
 
     elif token.type == Token.CHAR:
         code = "[-]"  # zero current cell
-        code += get_set_cell_value_code(ord(token.data), 0)  # set current cell to the char value
+        code += get_set_cell_value_code(ord(token.data), 0)[0]  # set current cell to the char value
         code += ">"  # point to next cell
         return code
 
@@ -885,13 +917,21 @@ def get_print_string_code(string):
     code += "<"  # point to original cell ("character" cell)
 
     prev_value = 0
+    prev_loop_value = 0
     for i in range(len(string)):
         current_value = ord(string[i])
 
-        code += get_set_cell_value_code(current_value, prev_value, zero_next_cell_if_necessary=False)
+        char_code, ptr_offset = get_set_cell_value_code(current_value, prev_value, zero_next_cell_if_necessary=False, is_printing=True, previous_loop_value=prev_loop_value)
+
+        code += char_code
         code += "."
 
-        prev_value = current_value
+        if ptr_offset != 0:
+            code += ("<" if ptr_offset > 0 else ">") * ptr_offset
+            prev_loop_value = current_value
+        else:
+            prev_value = current_value
+            prev_loop_value = 0
 
     return code
 
