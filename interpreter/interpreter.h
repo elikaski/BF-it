@@ -49,7 +49,6 @@ private:
     
 
     void input();
-    void output() const;
     bool step();
 public:
     Interpreter(const string& bf_path);
@@ -59,4 +58,5 @@ public:
     Interpreter& remove_br(pointer_t at);
     bool is_finished() const;
     void set_debug_mode(bool mode);
+    void output() const;
 };

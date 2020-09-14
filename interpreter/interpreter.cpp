@@ -1,12 +1,116 @@
 #include <iostream>
+#include <string>
 #include <cstdio>
+#include <algorithm>
 #include <fstream>
 #include <stack>
 #include <csignal>
 #include "interpreter.h"
 
+
+void show_interactive_help() {
+    cout << "Brainfuck Interpreter/Debugger\n" <<
+        "Commands:\n" << 
+        "h/help         -   Show this help message\n" << 
+        "q/quit         -   Quits\n" << 
+        "debug [0/1]    -   Enable or disable debug mode - enables breakpoints\n" << 
+        "run            -   Runs until code completion or breakpoint if debug mode is enabled\n" << 
+        "run <num>      -   Runs for specified number of steps or breakpoint if debug mode is enabled\n" << 
+        "br <cmd-idx>   -   Create breakpoint at the specified command index\n" << 
+        "unbr <cmd-idx> -   Removes breakpoint from the specified command index\n" <<  
+        "read           -   Print the content of the tape at the current index" <<
+        endl;
+}
+
 void interactive_mode() {
-    cout << "later" << endl;
+    string command;
+    Interpreter* bf = nullptr;
+    
+
+    cout << "Interactive Mode" << endl;
+
+    while (bf == nullptr) {
+        cout << "Input bf code path to begin or q to exit\n>>" << flush;
+        getline(cin, command);
+
+        if ((command == "q") || (command == "quit")) {
+            return;
+        }
+
+        try {
+            bf = new Interpreter(command);
+        }
+        catch (const exception& e) {
+            cout << "Exception encountered\n" << e.what() << endl;
+        }
+    }
+
+    cout << "Code parsed successfully" << endl;
+    cout << "Input command or help for list of commands" << endl;
+
+    while ((command != "q") && (command != "quit") && !bf->is_finished()) {
+        cout << ">>" << flush;
+        getline(cin, command);
+
+        if (command == "") {
+            continue;
+        }
+
+        // single word commands parsed first
+        if ((command == "h") || (command == "help")) {
+            show_interactive_help();
+        }
+        else if (command == "run") {
+            bf->run();
+        }
+        else if (command == "read") {
+            bf->output();
+            cout << endl;
+        }
+        else {
+            // 2 part commands
+            // all commands have the second part as an integer
+
+            // find seperator
+            auto pos = command.find(" ");
+
+            if (pos != string::npos) {
+                string sub_num = command.substr(pos+1, command.length());
+                if (!all_of(sub_num.begin(), sub_num.end(), ::isdigit)) {
+                    std::cout << "Unknown command" << endl;
+                    continue;
+                }
+                
+                unsigned int num = stoi(sub_num);
+                command = command.substr(0, pos);
+
+                if (command == "run") {
+                    bf->execute(num);
+                }
+                else if (command == "debug") {
+                    bf->set_debug_mode((bool)num);
+                }
+                else if (command == "br") {
+                    bf->new_br(num);
+                }
+                else if (command == "unbr") {
+                    bf->remove_br(num);
+                }
+                else {
+                    std::cout << "Unknown command" << endl;
+                }
+            }
+            else {
+                std::cout << "Unknown command" << endl;
+            }
+        }
+    }
+
+    if (bf->is_finished()) {
+        std::cout << "Program finished" << endl;
+    }
+
+    delete bf;
 }
 
 void exit_sig_handler(int) noexcept {
@@ -24,25 +128,24 @@ int main(int argc, char* argv[]) {
     // register signal handlers for terminating infinite programs gracefully on ctrl+C
     signal(SIGINT, exit_sig_handler);
 
+    if (argc == 1) {
+        // if not arguement given use interactive mode
+        interactive_mode();
+        return 0;
+    }
+
     try {
-        if (argc == 1) {
-            // if not arguement given use interactive mode
-            interactive_mode();
-        }
-        else {
-            // file path given in command line
-            // run bf code to completion (or error)
-            Interpreter bf(argv[1]);
-            bf.run();
-        }
+        // file path given in command line
+        // run bf code to completion (or error)
+        Interpreter bf(argv[1]);
+        bf.run();
     }
     catch (const exception& e) {
         cout << e.what() << endl;
         exit_code = 1;
     }
 
-    cout << "Press enter to exit" << endl;
-    getchar();
+    system("pasus");
 
     return exit_code;
 }
