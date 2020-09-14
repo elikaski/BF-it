@@ -1,0 +1,144 @@
+char read_one_char() {
+    // take the first char and ignore anything else, until reaching newline
+    char res = readchar();
+    if(res - '\n') { // If res is a newline then return newline
+        while (readchar() - '\n') {}
+    }
+    return res;
+}
+
+void main() {
+    int main[10][10];
+    main[1][5] = 1;
+    main[2][5] = 2;
+
+    int direction = 1; // 0 UP 1 RIGHT 2 DOWN 3 LEFT
+    int x = 2;
+    int y = 5;
+    int length = 2; // Body length
+
+    int random = 0xC4; // Random seed
+
+    int food_x = (random) % 10; // This might not reach every spot
+    int food_y = (random / 0xF) % 10;
+
+    bool game_over;
+    bool game_playing = true;
+
+    while(game_playing) {
+        // ---------- print board ----------
+        print("############\n");
+        for(int j = 0; j - 10; j++) {
+            print("#");
+            for(int i = 0; i - 10; i++) { // Unroll the loop for faster execution but larger file size
+                if(main[i][j]) { // board_char != 0
+                    if(i == x && j == y) {
+                        printchar('@'); // Head
+                    } else {
+                        printchar('O');
+                    }
+                    main[i][j]--; // Decrease tail counter
+                } else {
+                    if(i == food_x && j == food_y) {
+                        printchar('&');
+                    } else {
+                        printchar(' ');
+                    }
+                }
+            }
+            print("#\n");
+        }
+        random += x + y + direction + length + 1 + food_x + food_y;
+        print("############\n");
+
+        char input = read_one_char();
+        if(input == 'W' || input == 'w') {
+            if(direction == 2) { // If opposite direction then game over
+                game_over = true;
+            }
+            direction = 0;
+        } else {
+            if(input == 'D' || input == 'd') {
+                if(direction == 3) {
+                    game_over = true;
+                }
+                direction = 1;
+            } else {
+                if(input == 'S' || input == 's') {
+                    if(direction == 0) {
+                        game_over = true;
+                    }
+                    direction = 2;
+                } else {
+                    if(input == 'A' || input == 'a') {
+                        if(direction == 1) {
+                            game_over = true;
+                        }
+                        direction = 3;
+                    }
+                }
+            }
+        }
+
+        if(direction == 0) { // Up
+            if(y-- == 0) {
+                game_over = true;
+            }
+        } else {
+            if(direction == 1) { // Right
+                if(x++ == 9) {
+                    game_over = true;
+                }
+            } else {
+                if(direction == 2) { // Down
+                    if(y++ == 9) {
+                        game_over = true;
+                    }
+                } else {
+                    //if(direction == 3) { // Left
+                        if(x-- == 0) {
+                            game_over = true;
+                        }
+                    //}
+                }
+            }
+        }
+
+        if(main[x][y]) { // Position already contains body
+            game_over = true;
+        }
+
+        main[x][y] = length;
+
+        if(x == food_x) {
+            if(y == food_y) {
+                food_x = (random) % 10;
+                food_y = (random / 0xF) % 10;
+
+                if(++length - 100) { // length != 100
+                    for(int i = 0; i - 100; i++) { // This is slow but its for the tail to work correctly
+                        if(main[i]) {
+                            main[i]++;
+                        }
+                    }
+                } else { // length == 100
+                    game_playing = false;
+                }
+            }
+        }
+
+        if(game_over) {
+            game_playing = false;
+        }
+    }
+
+    if(game_over) {
+        print("GAME OVER\n");
+    } else {
+        print("YOU WIN\n");
+    }
+
+    print("SCORE: ");
+    printint(length);
+    print("\n");
+}
