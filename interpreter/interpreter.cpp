@@ -7,6 +7,7 @@
 #include <csignal>
 #include "interpreter.h"
 
+using namespace std;
 
 void show_interactive_help() {
     cout << "Brainfuck Interpreter/Debugger\n" <<
@@ -145,7 +146,7 @@ int main(int argc, char* argv[]) {
         exit_code = 1;
     }
 
-    system("pasus");
+    system("pause");
 
     return exit_code;
 }
@@ -163,120 +164,92 @@ void Interpreter::output() const {
 bool Interpreter::step() {
     // executes the pointer command and increment pointer
     // pointer is incremented after execution so pointer always points to the next command
-    switch (commands[command_pointer]) {
-    case (Command::inc):
-        ++(*tape_iterator);
-        break;
-    case (Command::dec):
-        --(*tape_iterator);
-        break;
-    case (Command::left):
-        if (tape_iterator == tape.begin()) {
-            throw TapeLeftBound();
-        }
-        --tape_iterator;
-        break;
-    case (Command::right):
-        ++tape_iterator;
-        if (tape_iterator == tape.end()) {
-            // add new cells to the tape on demand
-            tape.push_back((unsigned char) 0);
-            // this is the only place that modifies the tape size
-            // so get a new iterator since the old is invalid
-            tape_iterator = tape.end();
-            --tape_iterator;
-        }
-        break;
-    case (Command::out):
-        this->output();
-        break;
-    case (Command::in):
-        this->input();
-        break;
-    case (Command::open):
-        // jump forward if zero
-        if (!(*tape_iterator)) {
-            command_pointer = forward_jumps[command_pointer];
-        }
-        break;
-    case (Command::close):
-        // jump backwards if not zero
-        if (*tape_iterator) {
-            command_pointer = backward_jumps[command_pointer];
-        }
-        break;
-    }
-
-    ++command_pointer;
+    (*command_iterator->first)();
+    ++command_iterator;
 
     // return true when there is a breakpoint on the next instruction
-    return (breakpoints.find(command_pointer) != breakpoints.end());
+    return ((command_iterator != commands.end()) && (*command_iterator).second);
 }
 
-Interpreter::Interpreter(const string& bf_path) : bf_path(bf_path), debug_mode(false), commands(0), tape(1000, 0), forward_jumps(), backward_jumps(), breakpoints(), command_pointer(0), tape_iterator(tape.begin()) {
-    char next;
+Interpreter::Interpreter(const string& bf_path) : bf_path(bf_path), debug_mode(false), commands(0), tape(10, 0), command_iterator(commands.begin()), tape_iterator(tape.begin()) {
+    char next, peeked;
     ifstream file(this->bf_path, fstream::in);
     // check file is valid
     if (!file) {
         throw runtime_error("Could not open file " + this->bf_path);
     }
 
-    pointer_t running_pointer = 0;
+    Command* cmd;
+
+    // used to count consecutive character that can be merged
+    int count = 0;
 
     // stack to track branches relations
     // push on the stack when encoutering '['
     // pop and create relation on ']'
-    stack<pointer_t> branch_stack;
+    stack<int> branch_stack;
 
     // read the input file and parse tokens
     while (file.get(next)) {
         switch (next) {
         case ('+'):
-            commands.push_back(Command::inc);
-            break;
         case ('-'):
-            commands.push_back(Command::dec);
+            count = (next == '+') ? 1 : -1;
+            peeked = file.peek();
+            while ((peeked == '+' || peeked == '-')) {
+                file.get(next);     // will always read either + or -
+                count += (next == '+') ? 1 : -1;
+                peeked = file.peek();
+            }
+            cmd = new AddCommand(tape, tape_iterator, count);
+            commands.push_back(pair<Command*, bool>(cmd, 0));
             break;
         case ('<'):
-            commands.push_back(Command::left);
-            break;
         case ('>'):
-            commands.push_back(Command::right);
+            count = (next == '>') ? 1 : -1;
+            peeked = file.peek();
+            while ((peeked == '<' || peeked == '>')) {
+                file.get(next);     // will always read either < or >
+                count += (next == '>') ? 1 : -1;
+                peeked = file.peek();
+            }
+            cmd = new MoveCommand(tape, tape_iterator, count);
+            commands.push_back(pair<Command*, bool>(cmd, 0));
             break;
         case ('.'):
-            commands.push_back(Command::out);
+            cmd = new OutputCommand(tape, tape_iterator);
+            commands.push_back(pair<Command*, bool>(cmd, 0));
             break;
         case (','):
-            commands.push_back(Command::in);
+            cmd = new InputCommand(tape, tape_iterator);
+            commands.push_back(pair<Command*, bool>(cmd, 0));
             break;
         case ('['):
-            commands.push_back(Command::open);
-            branch_stack.push(running_pointer);
+            branch_stack.push(commands.size());
+            cmd = new JmpCommand(tape_iterator, command_iterator);
+            commands.push_back(pair<Command*, bool>(cmd, 0));
             break;
         case (']'):
-            commands.push_back(Command::close);
-            // check stack is not empty
             if (branch_stack.empty()) {
                 throw UnbalancedBracket();
             }
-            // create jump pair
-            forward_jumps.insert(pair<pointer_t, pointer_t>(branch_stack.top(), running_pointer));
-            backward_jumps.insert(pair<pointer_t, pointer_t>(running_pointer, branch_stack.top()));
+            // create the backward jump command
+            // and modify the forward branch
+
+            // backward jump
+            cmd = new JmpCommand(tape_iterator, command_iterator);
+            static_cast<JmpCommand*>(cmd)->set_offset(branch_stack.top() - (int) commands.size());
+
+            // forward jump
+            static_cast<JmpCommand*>(commands[branch_stack.top()].first)->set_offset(commands.size() - branch_stack.top());
+
+            commands.push_back(pair<Command*, bool>(cmd, 0));
             branch_stack.pop();
-            break;
-        case ('!'):
-            // breakpoint is ignored for commands array
-            // need to decrement the running pointer to offset the breakpoint
-            // postfix decrement will insert the breakpoint at the correct index
-            new_br(running_pointer--);
-            // because breakpoint is not a command
             break;
         default:
             // all other chars are ignored
             break;
         }
-
-        ++running_pointer;
     }
 
     // after program parsed need to ensure branch stack is empty
@@ -285,17 +258,27 @@ Interpreter::Interpreter(const string& bf_path) : bf_path(bf_path), debug_mode(f
     }
 
     file.close();
+
+    // get a new valid iterator for commands
+    command_iterator = commands.begin();
+}
+
+Interpreter::~Interpreter() {
+    // deallocate all the commands
+    for (auto it : commands) {
+        delete it.first;
+    }
 }
 
 Interpreter & Interpreter::execute(unsigned int count) {
-    for (unsigned int i = 0; (i < count) && (command_pointer < commands.size()); ++i) {
+    for (unsigned int i = 0; (i < count) && (!this->is_finished()); ++i) {
         bool is_br = step();
         if (debug_mode && is_br) {
             break;
         }
     }
 
-    if (command_pointer == commands.size()) {
+    if (command_iterator == commands.end()) {
         cout << "\nProgram finished successfully" << endl;
     }
 
@@ -303,7 +286,7 @@ Interpreter & Interpreter::execute(unsigned int count) {
 }
 
 Interpreter & Interpreter::run() {
-    while (command_pointer < commands.size()) {
+    while (!this->is_finished()) {
         bool is_br = step();
         if (debug_mode && is_br) {
             return *this;
@@ -315,25 +298,18 @@ Interpreter & Interpreter::run() {
     return *this;
 }
 
-Interpreter & Interpreter::new_br(pointer_t at) {
-    breakpoints.insert(at);
+Interpreter & Interpreter::new_br(size_t at) {
+    commands[at].second = true;
     return *this;
 }
 
-Interpreter & Interpreter::remove_br(pointer_t at) {
-    auto it = breakpoints.find(at);
-    if (it != breakpoints.end()) {
-        breakpoints.erase(it);
-    }
-    else {
-        cout << "No breakpoint found at " << at << endl;
-    }
-    
+Interpreter & Interpreter::remove_br(size_t at) {
+    commands[at].second = false;
     return *this;
 }
 
 bool Interpreter::is_finished() const {
-    return command_pointer == commands.size();
+    return command_iterator == commands.end();
 }
 
 void Interpreter::set_debug_mode(bool mode) {

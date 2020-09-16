@@ -1,62 +1,36 @@
+#pragma once
 #include <exception>
 #include <vector>
 #include <list>
 #include <unordered_map>
 #include <unordered_set>
+#include "command.h"
 
-using namespace std;
-
-// if size of pointer will ever be too small change here
-typedef unsigned int pointer_t;
-
-class UnbalancedBracket : public exception {
+class UnbalancedBracket : public std::exception {
     virtual const char* what() const throw() {
         return "Unbalanced square brackets caugt";
     }
 };
 
-class TapeLeftBound : public exception {
-    virtual const char* what() const throw() {
-        return "Tape pointer tried leaving tape";
-    }
-};
-
-
-// possible commands enumeration
-enum Command : unsigned char {
-    inc,
-    dec,
-    left,
-    right,
-    in,
-    out,
-    open,
-    close,
-};
-
 class Interpreter {
 private:
-    const string bf_path;
+    const std::string bf_path;
     bool debug_mode;
-    vector<Command> commands;
-    list<unsigned char> tape;
-    // using two mappings will allow faster lookup since type of jump is known
-    unordered_map<pointer_t, pointer_t> forward_jumps;
-    unordered_map<pointer_t, pointer_t> backward_jumps;
-    unordered_set<pointer_t> breakpoints;
-    pointer_t command_pointer;
-    list<unsigned char>::iterator tape_iterator;
-    
+    std::vector<std::pair<Command*, bool>> commands;
+    std::list<unsigned char> tape;
+    std::vector<std::pair<Command*, bool>>::iterator command_iterator;
+    std::list<unsigned char>::iterator tape_iterator;   
 
-    void input();
     bool step();
 public:
-    Interpreter(const string& bf_path);
+    Interpreter(const std::string& bf_path);
+    ~Interpreter();
     Interpreter& execute(unsigned int count);
     Interpreter& run();
-    Interpreter& new_br(pointer_t at);
-    Interpreter& remove_br(pointer_t at);
+    Interpreter& new_br(size_t at);
+    Interpreter& remove_br(size_t at);
     bool is_finished() const;
     void set_debug_mode(bool mode);
+    void input();
     void output() const;
 };
