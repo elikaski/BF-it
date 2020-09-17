@@ -1,38 +1,37 @@
 #include "command.h"
 #include <iostream>
+#include <iterator>
+
 using namespace std;
 
-TapeCommand::TapeCommand(list<unsigned char>& tape, list<unsigned char>::iterator& tape_iter) : Command(), tape(tape), tape_iterator(tape_iter) {}
+TapeCommand::TapeCommand(vector<unsigned char>& tape, vector<unsigned char>::iterator& tape_iter) : Command(), tape(tape), tape_iterator(tape_iter) {}
 
-MoveCommand::MoveCommand(list<unsigned char>& tape, list<unsigned char>::iterator& tape_iter, int move_count) : TapeCommand(tape, tape_iter), count(move_count) {}
+MoveCommand::MoveCommand(vector<unsigned char>& tape, vector<unsigned char>::iterator& tape_iter, int move_count) : TapeCommand(tape, tape_iter), count(move_count) {}
 
-AddCommand::AddCommand(list<unsigned char>& tape, list<unsigned char>::iterator& tape_iter, int add) : TapeCommand(tape, tape_iter), count(add) {}
+AddCommand::AddCommand(vector<unsigned char>& tape, vector<unsigned char>::iterator& tape_iter, int add) : TapeCommand(tape, tape_iter), count(add) {}
 
-InputCommand::InputCommand(std::list<unsigned char>& tape, std::list<unsigned char>::iterator& tape_iter) : TapeCommand(tape, tape_iter) {}
+InputCommand::InputCommand(vector<unsigned char>& tape, vector<unsigned char>::iterator& tape_iter) : TapeCommand(tape, tape_iter) {}
 
-OutputCommand::OutputCommand(std::list<unsigned char>& tape, std::list<unsigned char>::iterator& tape_iter) : TapeCommand(tape, tape_iter) {}
+OutputCommand::OutputCommand(vector<unsigned char>& tape, vector<unsigned char>::iterator& tape_iter) : TapeCommand(tape, tape_iter) {}
 
 
 void MoveCommand::operator()() {
-	// count can be either positive or negative
-	for (int i = 0; i < count; ++i) {
-		++tape_iterator;
-		// only enters if count is positive (move right)
-		if (tape_iterator == tape.end()) {
-			// in this case we add all the needed elements at once
-			// moving the tape pointer to the end and finish this function
-			tape.insert(tape.end(), (size_t)count - i, 0);
-			tape_iterator = tape.end();
-			--tape_iterator;
-			return;
-		}
+	// distance is constant time for random access iterator (which a vector iterator is)
+	auto dist_to_end = distance(tape_iterator, tape.end());
+	auto dist_to_start = distance(tape_iterator, tape.begin());
+
+	if (dist_to_start > count) {
+		throw TapeLeftBound();
 	}
-	for (int i = 0; i > count; --i) {
-		if (tape_iterator == tape.begin()) {
-			throw TapeLeftBound();
-		}
-		--(tape_iterator);
+
+	if (dist_to_end <= count) {
+		tape.insert(tape.end(), count - dist_to_end + 1, 0);
+		tape_iterator = tape.end();
+		--tape_iterator;
+		return;
 	}
+
+	tape_iterator += count;
 }
 
 void AddCommand::operator()() {
@@ -47,7 +46,7 @@ void OutputCommand::operator()() {
 	putchar(*tape_iterator);
 }
 
-JmpCommand::JmpCommand(std::list<unsigned char>::iterator& tape_iter, std::vector<std::pair<Command*, bool>>::iterator& command_iter) : tape_iterator(tape_iter), command_iterator(command_iter), offset(0) {}
+JmpCommand::JmpCommand(vector<unsigned char>::iterator& tape_iter, vector<pair<Command*, bool>>::iterator& command_iter) : tape_iterator(tape_iter), command_iterator(command_iter), offset(0) {}
 
 void JmpCommand::set_offset(int offset) {
 	this->offset = offset;
@@ -56,15 +55,10 @@ void JmpCommand::set_offset(int offset) {
 void JmpCommand::operator()() {
 	// offset can tell us if it's a forward or backwards branch
 	// forward jump should happen if zero, backward if not
-	// can be written as a xor
 
 	unsigned char tape_val = *tape_iterator;
 
-	if ((offset > 0) && (!tape_val)) {
-		command_iterator += offset;
-	}
-
-	if ((offset < 0) && (tape_val)) {
+	if (((offset > 0) && (!tape_val)) || ((offset < 0) && (tape_val))) {
 		command_iterator += offset;
 	}
 }

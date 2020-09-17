@@ -1,5 +1,4 @@
 #pragma once
-#include <list>
 #include <vector>
 #include <unordered_map>
 
@@ -17,11 +16,10 @@ public:
 
 class TapeCommand : public Command {
 protected:
-	std::list<unsigned char>& tape;
-	std::list<unsigned char>::iterator& tape_iterator;
+	std::vector<unsigned char>& tape;
+	std::vector<unsigned char>::iterator& tape_iterator;
 public:
-	TapeCommand(std::list<unsigned char>& tape, std::list<unsigned char>::iterator& tape_iter);
-	TapeCommand(const TapeCommand& other);	
+	TapeCommand(std::vector<unsigned char>& tape, std::vector<unsigned char>::iterator& tape_iter);
 	virtual void operator()() = 0;
 	virtual ~TapeCommand() {}
 };
@@ -29,7 +27,7 @@ public:
 class MoveCommand : public TapeCommand {
 	int count;
 public:
-	MoveCommand(std::list<unsigned char>& tape, std::list<unsigned char>::iterator& tape_iter, int move_count);
+	MoveCommand(std::vector<unsigned char>& tape, std::vector<unsigned char>::iterator& tape_iter, int move_count);
 	virtual void operator()();
 	virtual ~MoveCommand() {}
 };
@@ -37,32 +35,32 @@ public:
 class AddCommand : public TapeCommand {
 	int count;
 public:
-	AddCommand(std::list<unsigned char>& tape, std::list<unsigned char>::iterator& tape_iter, int add);
+	AddCommand(std::vector<unsigned char>& tape, std::vector<unsigned char>::iterator& tape_iter, int add);
 	virtual void operator()();
 	virtual ~AddCommand() {}
 };
 
 class InputCommand : public TapeCommand {
 public:
-	InputCommand(std::list<unsigned char>& tape, std::list<unsigned char>::iterator& tape_iter);
+	InputCommand(std::vector<unsigned char>& tape, std::vector<unsigned char>::iterator& tape_iter);
 	virtual void operator()();
 	virtual ~InputCommand() {}
 };
 
 class OutputCommand : public TapeCommand {
 public:
-	OutputCommand(std::list<unsigned char>& tape, std::list<unsigned char>::iterator& tape_iter);
+	OutputCommand(std::vector<unsigned char>& tape, std::vector<unsigned char>::iterator& tape_iter);
 	virtual void operator()();
 	virtual ~OutputCommand() {}
 };
 
 class JmpCommand : public Command {
 protected:
-	std::list<unsigned char>::iterator& tape_iterator;
+	std::vector<unsigned char>::iterator& tape_iterator;
 	std::vector<std::pair<Command*, bool>>::iterator& command_iterator;
 	int offset;
 public:
-	JmpCommand(std::list<unsigned char>::iterator& tape_iter, std::vector<std::pair<Command*, bool>>::iterator& command_iter);
+	JmpCommand(std::vector<unsigned char>::iterator& tape_iter, std::vector<std::pair<Command*, bool>>::iterator& command_iter);
 	void set_offset(int offset);
 	virtual void operator()();
 	virtual ~JmpCommand() {}

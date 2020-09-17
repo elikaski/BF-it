@@ -17,9 +17,9 @@ private:
     const std::string bf_path;
     bool debug_mode;
     std::vector<std::pair<Command*, bool>> commands;
-    std::list<unsigned char> tape;
+    std::vector<unsigned char> tape;
     std::vector<std::pair<Command*, bool>>::iterator command_iterator;
-    std::list<unsigned char>::iterator tape_iterator;   
+    std::vector<unsigned char>::iterator tape_iterator;
 
     bool step();
 public:
