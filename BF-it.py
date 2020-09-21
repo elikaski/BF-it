@@ -4,6 +4,7 @@ import argparse
 import os
 import Compiler
 import Interpreter
+import Minify
 
 
 def process_args():
@@ -11,6 +12,7 @@ def process_args():
     parser.add_argument("filepath", metavar="input_file", nargs=1, help="Path to the input code file")
     parser.add_argument("-o", metavar="output_file", nargs=1, help="Path to output Brainfuck file")
     parser.add_argument("-r", action="store_true", help="Run the Brainfuck file after compilation")
+    parser.add_argument("-m", "--minify", dest="minify", action="store_true", help="Minifies the compiled code")
 
     args = parser.parse_args()
 
@@ -22,11 +24,12 @@ def process_args():
         output_file = os.path.join(os.path.dirname(input_file), output_file_basename)
 
     run_file = args.r
+    minify_file = args.minify
 
-    return input_file, output_file, run_file
+    return input_file, output_file, run_file, minify_file
 
 
-def compile_file(input_file, output_file, run):
+def compile_file(input_file, output_file, run, minify_file):
     print("Compiling file '%s'..." % input_file)
 
     with open(input_file, "rb") as f:
@@ -34,6 +37,9 @@ def compile_file(input_file, output_file, run):
 
     brainfuck_code = Compiler.compile(code)
     brainfuck_code += "\n"
+
+    if minify_file:
+        brainfuck_code = Minify.minify(brainfuck_code)
 
     with open(output_file, "wt") as f:
         f.write(brainfuck_code)
@@ -46,7 +52,5 @@ def compile_file(input_file, output_file, run):
 
 
 if __name__ == '__main__':
-    input_file, output_file, run_file = process_args()
-    compile_file(input_file, output_file, run_file)
-
-
+    input_file, output_file, run_file, minify_file = process_args()
+    compile_file(input_file, output_file, run_file, minify_file)
