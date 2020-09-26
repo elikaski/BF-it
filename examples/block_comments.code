@@ -1,0 +1,18 @@
+/* Comment
+Comment
+I like multi
+line
+comments*/
+void main()
+{
+    /* Hello world */
+	print("Hello, world!\n" /* Even in the middle of stuff*/);
+    /*Hello
+        this won't execute as it is inside a comment
+        {
+            int x = 3;    
+        }
+    */
+    int x=/*hello*/3;
+    printint(/*hello */x /* world*/);
+}
