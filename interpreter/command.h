@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include <unordered_map>
 
 class TapeLeftBound : public std::exception {
 	virtual const char* what() const throw() {

@@ -1,14 +1,11 @@
 #pragma once
 #include <exception>
 #include <vector>
-#include <list>
-#include <unordered_map>
-#include <unordered_set>
 #include "command.h"
 
 class UnbalancedBracket : public std::exception {
     virtual const char* what() const throw() {
-        return "Unbalanced square brackets caugt";
+        return "Unbalanced square brackets caught";
     }
 };
 
