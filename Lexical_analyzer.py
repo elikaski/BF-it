@@ -55,6 +55,7 @@ def analyze(text):
         ('\"([^\"])*\"',   Token.STRING),
         ('\'(\\\\)?[^\']\'', Token.CHAR),
         ('//.*(\\n|$)', Token.COMMENT),
+        (r'/\*[\s\S]*?\*/', Token.COMMENT), # multiline comments
         ('.',       Token.UNIDENTIFIED)
     ]
 
