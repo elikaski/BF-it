@@ -72,304 +72,349 @@ bool signed_greater_than_equal(int a, int b) { // a >= b
     }
 }
 
+void update_score() {
+    if(!score_maxed) {
+        if(d6++ == 9) { d6 = 0;
+            if(d5++ == 9) { d5 = 0;
+                if(d4++ == 9) { d4 = 0;
+                    if(d3++ == 9) { d3 = 0;
+                        if(d2++ == 9) { d2 = 0;
+                            if(d1++ == 9) {
+                                score_maxed = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void print_score() {
+    if(score_maxed) {
+        print("999999");
+    } else {
+        printchar(d1+48);
+        printchar(d2+48);
+        printchar(d3+48);
+        printchar(d4+48);
+        printchar(d5+48);
+        printchar(d6+48);
+    }
+}
+
+bool move_left_or_right(bool move_right) {
+    bool move_ok = true;
+    for(int i = 0; i - 4; i++) {
+        for(int j = 0; j - 4; j++) {
+            if(current_piece[i][j]) {
+                int _ = current_x+j-1;
+                if(move_right) {
+                    _ += 2;
+                }
+                if(is_negative(_) + board[current_y+i][_] + (_ == 10)) {
+                    move_ok = false;
+                }
+            }
+        }
+    }
+
+    if(move_ok) {
+        if(move_right) {
+            current_x++;
+        } else {
+            current_x--;
+        }
+    }
+    return move_ok;
+}
+
+void get_new_piece() {
+    current_x = 3;
+    piece = random % 7;
+    if(piece == 0) { // I
+        // ####
+        current_piece[1][0] = 1;
+        current_piece[1][1] = 1;
+        current_piece[1][2] = 1;
+        current_piece[1][3] = 1;
+    }
+    if(piece == 1) { // J
+        // #
+        // ###
+
+        current_piece       = 1;
+        current_piece[1][0] = 1;
+        current_piece[1][1] = 1;
+        current_piece[1][2] = 1;
+    }
+    if(piece == 2) { // L
+        //   #
+        // ###
+
+        current_piece[2]    = 1;
+        current_piece[1][0] = 1;
+        current_piece[1][1] = 1;
+        current_piece[1][2] = 1;
+    }
+    if(piece == 3) { // O
+        // ##
+        // ##
+
+        current_piece       = 1;
+        current_piece[1]    = 1;
+        current_piece[1][0] = 1;
+        current_piece[1][1] = 1;
+        current_x = 4;
+    }
+    if(piece == 4) { // S
+        //  ##
+        // ##
+
+        current_piece[1]    = 1;
+        current_piece[2]    = 1;
+        current_piece[1][0] = 1;
+        current_piece[1][1] = 1;
+        current_x = 4;
+    }
+    if(piece == 5) { // Z
+        // ##
+        //  ##
+
+        current_piece       = 1;
+        current_piece[1]    = 1;
+        current_piece[1][1] = 1;
+        current_piece[1][2] = 1;
+        current_x = 4;
+    }
+    if(piece == 6) { // T
+        //  #
+        // ###
+
+        current_piece[1]    = 1;
+        current_piece[1][0] = 1;
+        current_piece[1][1] = 1;
+        current_piece[1][2] = 1;
+        current_x = 4;
+    }
+}
+
+void draw_board() {
+    print("+----------+\n");
+    for(int i = 0; i - 12; i++) {
+        print("|");
+        for(int j = 0; j - 10; j++) {
+            char board_piece = ' ';
+            if(board[i][j]) {
+                board_piece = '#';
+            }
+            // --- Current Piece Check ---
+            if(current_y <= i) {
+                if(i <= current_y+3) {
+                    if(j <= current_x+3) {
+                        if(is_positive(current_x+j+3)) {
+                            if(signed_greater_than_equal(j, current_x)) {
+                                if(current_piece[i-current_y][j-current_x]) {
+                                    board_piece = '&';
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            printchar(board_piece);
+        }
+        print("|");
+
+        // --- Print Score ---
+        if((i == 0) + (i == 3)) { print("--------+");}
+        if(i == 1) { print(" SCORE  |");}
+        if(i == 2) {
+            print(" ");
+            print_score();
+            print(" |");
+        }
+        print("\n");
+    }
+    print("+----------+\n");
+}
+
+int filled_row_check() {
+    int rows_removed = 0;
+    bool remove_row = true;
+    while(remove_row) {
+        remove_row = false;
+
+        int to_remove;
+        for(int i = 0; i - 12; i++) {
+            bool row_filled = true;
+            for(int j = 0; j - 10; j++) {
+                if(!board[i][j]) { // Row is not filled
+                    j = 9;
+                    row_filled = false;
+                }
+            }
+            if(row_filled) {
+                to_remove = i;
+                i = 11;
+                remove_row = true;
+            }
+        }
+
+        if(remove_row) {
+            rows_removed++;
+            for(int j = 0; j - 10; j++) { // Clear row
+                board[to_remove][j] = 0;
+            }
+            for(int i = to_remove - 1; i; i--) { // Iterate down while moving rows up by 1
+                for(int j = 0; j - 10; j++) {
+                    board[i+1][j] = board[i][j];
+                }
+            }
+        }
+    }
+    return rows_removed;
+}
+
+bool collision_check(int offset) {
+    bool in_block = false;
+    for(int i = 0; i - 4; i++) {
+        for(int j = 0; j - 4; j++) {
+            if(current_piece[i][j]) {
+                if(board[current_y+i+offset][current_x+j] + (current_y+i == 12-offset)) {
+                    in_block = true;
+                }
+            }
+        }
+    }
+    return in_block;
+}
+
+bool handle_input() {
+    bool in_block = false;
+    char input = read_one_char();
+    if((input == 'S') + (input == 's')) {
+        current_y++;
+        in_block = collision_check(0);
+    } else {
+        if(piece - 3) { // Piece is not O
+            char rotated[4][4];
+            //  0  1  2  3
+            //  4  5  6  7
+            //  8  9 10 11
+            // 12 13 14 15
+            bool rotate_left = (input == 'Q') + (input == 'q');
+            bool rotate = false;
+            bool rotate_right = (input == 'E') + (input == 'e');
+
+            int size = 4;
+            if(piece) { // 3x3
+                size = 3;
+            }
+
+            if(rotate_left + rotate_right) {
+                for(int i = 0; i - size; i++) {
+                    for(int j = 0; j - size; j++) {
+                        int _j = j;
+                        int _i = i;
+                        if(rotate_right) {
+                            _j = size-1 - _j;
+                        } else {
+                            _i = size-1 - _i;
+                        }
+                        rotated[i][j] = current_piece[_j][_i];
+                    }
+                }
+                rotate = true;
+            }
+
+            if(rotate) {
+                for(int i = 0; i - 4; i++) {
+                    for(int j = 0; j - 4; j++) {
+                        if(rotated[i][j]) {
+                            int _ = current_x+j;
+                            if(board[current_y+i][_] + is_negative(_) + (_ > 9) + (current_y + i > 11)) {
+                                rotate = false;
+                            }
+                        }
+                    }
+                }
+                for(int i = 0; i - 16; i++) {
+                    int pie = rotated[i]%%;
+
+                    if(rotate) { // Do not rotate if move is invalid
+                        current_piece[i] = pie;
+                    }
+                }
+            }
+        }
+    }
+
+    bool move_left = (input == 'A') + (input == 'a');
+    bool move_right = (input == 'D') + (input == 'd');
+
+    if(move_left + move_right) {
+        bool move_ok = true;
+
+        if((input == 'A') + (input == 'D')) {
+            move_ok = move_left_or_right(move_right);
+        }
+        if(move_ok) {
+            move_left_or_right(move_right);
+        }
+    }
+
+    random += input;
+
+    return in_block;
+}
+
+int board[12][10];
+int current_piece[4][4];
+
+bool score_maxed;
+int d1; // Digit 1
+int d2; // Digit 2
+int d3; // Digit 3
+int d4; // Digit 4
+int d5; // Digit 5
+int d6; // Digit 6
+
+int current_y;
+int current_x;
+
+int random = 0x1E; // Random Seed
+int piece;
+
 void main() {
-    int board[12][10];
-    int current_piece[4][4];
-
-    bool score_maxed;
-    bool playing = true;
     bool new_piece = true;
-    int d1; // Digit 1
-    int d2; // Digit 2
-    int d3; // Digit 3
-    int d4; // Digit 4
-    int d5; // Digit 5
-    int d6; // Digit 6
-
-    int random = 0x1E; // Random Seed
-    int piece = random % 7;
-
-    int current_y;
-    int current_x = 3;
+    bool playing = true;
 
     // I, J, L, O, S, Z, T
     // 0, 1, 2, 3, 4, 5, 6
 
     while(playing) {
-        // --- Piece Selection ---
         if(new_piece%%) {
-            if(piece == 0) { // I
-                // ####
-                current_piece[1][0] = 1;
-                current_piece[1][1] = 1;
-                current_piece[1][2] = 1;
-                current_piece[1][3] = 1;
-            }
-            if(piece == 1) { // J
-                // #
-                // ###
-
-                current_piece       = 1;
-                current_piece[1][0] = 1;
-                current_piece[1][1] = 1;
-                current_piece[1][2] = 1;
-            }
-            if(piece == 2) { // L
-                //   #
-                // ###
-
-                current_piece[2]    = 1;
-                current_piece[1][0] = 1;
-                current_piece[1][1] = 1;
-                current_piece[1][2] = 1;
-            }
-            if(piece == 3) { // O
-                // ##
-                // ##
-
-                current_piece       = 1;
-                current_piece[1]    = 1;
-                current_piece[1][0] = 1;
-                current_piece[1][1] = 1;
-                current_x = 4;
-            }
-            if(piece == 4) { // S
-                //  ##
-                // ##
-
-                current_piece[1]    = 1;
-                current_piece[2]    = 1;
-                current_piece[1][0] = 1;
-                current_piece[1][1] = 1;
-                current_x = 4;
-            }
-            if(piece == 5) { // Z
-                // ##
-                //  ##
-
-                current_piece       = 1;
-                current_piece[1]    = 1;
-                current_piece[1][1] = 1;
-                current_piece[1][2] = 1;
-                current_x = 4;
-            }
-            if(piece == 6) { // T
-                //  #
-                // ###
-
-                current_piece[1]    = 1;
-                current_piece[1][0] = 1;
-                current_piece[1][1] = 1;
-                current_piece[1][2] = 1;
-                current_x = 4;
-            }
+            get_new_piece();
         }
 
-        // --- Draw Board ---
-        print("+----------+\n");
-        for(int i = 0; i - 12; i++) {
-            print("|");
-            for(int j = 0; j - 10; j++) {
-                char board_piece = ' ';
-                if(board[i][j]) {
-                    board_piece = '#';
-                }
-                // --- Current Piece Check ---
-                if(current_y <= i) {
-                    if(i <= current_y+3) {
-                        if(j <= current_x+3) {
-                            if(is_positive(current_x+j+3)) {
-                                if(signed_greater_than_equal(j, current_x)) {
-                                    if(current_piece[i-current_y][j-current_x]) {
-                                        board_piece = '&';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                printchar(board_piece);
-            }
-            print("|");
+        draw_board();
 
-            // --- Print Score ---
-            if((i == 0) + (i == 3)) { print("--------+");}
-            if(i == 1) { print(" SCORE  |");}
-            if(i == 2) {
-                print(" ");
-                if(score_maxed) {
-                    print("999999");
-                } else {
-                    printchar(d1+48);
-                    printchar(d2+48);
-                    printchar(d3+48);
-                    printchar(d4+48);
-                    printchar(d5+48);
-                    printchar(d6+48);
-                }
-                print(" |");
-            }
-            print("\n");
-        }
-        print("+----------+\n");
-
-        int in_block = false;
-        for(int i = 0; i - 4; i++) {
-            for(int j = 0; j - 4; j++) {
-                if(current_piece[i][j]) {
-                    if(board[current_y+i+1][current_x+j] + (current_y+i == 11)) {
-                        in_block = true;
-                    }
-                }
-            }
-        }
+        int in_block = collision_check(1);
 
         if(!in_block) {
             int old_y = ++current_y;
             int old_x = current_x;
 
-            // --- Input Handler ---
-            char input = read_one_char();
-            if((input == 'S') + (input == 's')) {
-                current_y++;
-                for(int i = 0; i - 4; i++) {
-                    for(int j = 0; j - 4; j++) {
-                        if(current_piece[i][j]) {
-                            if(board[current_y+i][current_x+j] + (current_y+i == 12)) {
-                                in_block = true;
-                            }
-                        }
-                    }
-                }
-            } else {
-                if(piece - 3) { // Piece is not O
-                    char rotated[4][4];
-                    //  0  1  2  3
-                    //  4  5  6  7
-                    //  8  9 10 11
-                    // 12 13 14 15
-                    bool rotate_left = (input == 'Q') + (input == 'q');
-                    bool rotate = false;
-                    bool rotate_right = (input == 'E') + (input == 'e');
+            in_block = handle_input();
 
-                    int size = 4;
-                    if(piece) { // 3x3
-                        size = 3;
-                    }
-
-                    if(rotate_left + rotate_right) {
-                        for(int i = 0; i - size; i++) {
-                            for(int j = 0; j - size; j++) {
-                                int _j = j;
-                                int _i = i;
-                                if(rotate_right) {
-                                    _j = size-1 - _j;
-                                } else {
-                                    _i = size-1 - _i;
-                                }
-                                rotated[i][j] = current_piece[_j][_i];
-                            }
-                        }
-                        rotate = true;
-                    }
-
-                    if(rotate) {
-                        for(int i = 0; i - 4; i++) {
-                            for(int j = 0; j - 4; j++) {
-                                if(rotated[i][j]) {
-                                    int _ = current_x+j;
-                                    if(board[current_y+i][_] + is_negative(_) + (_ > 9) + (current_y + i > 11)) {
-                                        rotate = false;
-                                    }
-                                }
-                            }
-                        }
-                        for(int i = 0; i - 16; i++) {
-                            int pie = rotated[i]%%;
-
-                            if(rotate) { // Do not rotate if move is invalid
-                                current_piece[i] = pie;
-                            }
-                        }
-                    }
-                }
-            }
-
-            bool move_left = (input == 'A') + (input == 'a');
-            bool move_right = (input == 'D') + (input == 'd');
-
-            if(move_left + move_right) {
-                bool move_ok = true;
-
-                if((input == 'A') + (input == 'D')) {
-                    for(int i = 0; i - 4; i++) {
-                        for(int j = 0; j - 4; j++) {
-                            if(current_piece[i][j]) {
-                                int _ = current_x+j-1;
-                                if(move_right) {
-                                    _ += 2;
-                                }
-                                if(is_negative(_) + board[current_y+i][_] + (_ == 10)) {
-                                    move_ok = false;
-                                }
-                            }
-                        }
-                    }
-
-                    if(move_ok) {
-                        if(move_right) {
-                            current_x++;
-                        } else {
-                            current_x--;
-                        }
-                    }
-                }
-                if(move_ok) {
-                    for(int i = 0; i - 4; i++) {
-                        for(int j = 0; j - 4; j++) {
-                            if(current_piece[i][j]) {
-                                int _ = current_x+j-1;
-                                if(move_right) {
-                                    _ += 2;
-                                }
-                                if(is_negative(_) + board[current_y+i][_] + (_ == 10)) {
-                                    move_ok = false;
-                                }
-                            }
-                        }
-                    }
-
-                    if(move_ok) {
-                        if(move_right) {
-                            current_x++;
-                        } else {
-                            current_x--;
-                        }
-                    }
-                }
-            }
-            random += input;
             if(in_block) {
                 current_y = old_y;
                 current_x = old_x;
             }
 
-            if(!score_maxed) {
-                if(current_y - old_y) {
-                    if(d6++ == 9) { d6 = 0;
-                        if(d5++ == 9) { d5 = 0;
-                            if(d4++ == 9) { d4 = 0;
-                                if(d3++ == 9) { d3 = 0;
-                                    if(d2++ == 9) { d2 = 0;
-                                        if(d1++ == 9) {
-                                            score_maxed = true;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            if(current_y - old_y) {
+                update_score();
             }
         }
 
@@ -386,39 +431,7 @@ void main() {
             }
 
             // --- Row Check ---
-            int rows_removed = 0;
-            bool remove_row = true;
-            while(remove_row) {
-                remove_row = false;
-
-                int to_remove;
-                for(int i = 0; i - 12; i++) {
-                    bool row_filled = true;
-                    for(int j = 0; j - 10; j++) {
-                        if(!board[i][j]) { // Row is not filled
-                            j = 9;
-                            row_filled = false;
-                        }
-                    }
-                    if(row_filled) {
-                        to_remove = i;
-                        i = 11;
-                        remove_row = true;
-                    }
-                }
-
-                if(remove_row) {
-                    rows_removed++;
-                    for(int j = 0; j - 10; j++) { // Clear row
-                        board[to_remove][j] = 0;
-                    }
-                    for(int i = to_remove - 1; i; i--) { // Iterate down while moving rows up by 1
-                        for(int j = 0; j - 10; j++) {
-                            board[i+1][j] = board[i][j];
-                        }
-                    }
-                }
-            }
+            int rows_removed = filled_row_check();
 
             int score_to_add = 0;
             if(rows_removed == 1) {
@@ -436,24 +449,9 @@ void main() {
 
             while(score_to_add--) {
                 for(int i = 0; i - 10; i++) { // Add to score 10 times
-                    if(!score_maxed) {
-                        if(d6++ == 9) { d6 = 0;
-                            if(d5++ == 9) { d5 = 0;
-                                if(d4++ == 9) { d4 = 0;
-                                    if(d3++ == 9) { d3 = 0;
-                                        if(d2++ == 9) { d2 = 0;
-                                            if(d1++ == 9) {
-                                                score_maxed = true;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    update_score();
                 }
             }
-
 
             int height = 1; // 0 is highest
 
@@ -468,9 +466,8 @@ void main() {
                 }
             }
 
-            piece = (random += height) % 7;
+            random += height;
             new_piece = true;
-            current_x = 3;
 
             if(height == 0) {
                 playing = false;
@@ -479,15 +476,6 @@ void main() {
     }
     print("GAME OVER\n");
     print("SCORE: ");
-    if(score_maxed) {
-        print("999999");
-    } else {
-        printchar(d1+48);
-        printchar(d2+48);
-        printchar(d3+48);
-        printchar(d4+48);
-        printchar(d5+48);
-        printchar(d6+48);
-    }
+    print_score();
     print("\n");
 }
