@@ -1,5 +1,5 @@
 import re
-from Token import Token
+from Compiler.Token import Token
 
 
 class LexicalErrorException(Exception):
@@ -55,7 +55,7 @@ def analyze(text):
         ('\"([^\"])*\"',   Token.STRING),
         ('\'(\\\\)?[^\']\'', Token.CHAR),
         ('//.*(\\n|$)', Token.COMMENT),
-        (r'/\*[\s\S]*?\*/', Token.COMMENT), # multiline comments
+        (r'/\*[\s\S]*?\*/', Token.COMMENT),  # multiline comments
         ('.',       Token.UNIDENTIFIED)
     ]
 

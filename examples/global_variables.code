@@ -1,0 +1,61 @@
+// support for global variables
+
+
+/*
+A few notes about global variables:
+
+Global variables are stored at the beginning of the tape (left-most cells)
+While all functions code is happening in the right-most cells, as the "stack" may increase dynamically due to calculations
+Therefore, in order to access (read from or write to) global variables, we need to do a lot of moving across the taping
+(basically many '>' and '<' operations)
+As a result, using global variables will be a bit more costly in both code size and execution time
+*/
+
+
+void increase_global_x(int amount) {
+    global_x += amount;
+}
+
+void print_global_arr() {
+    for (int i = 0; i < 10; i++) {
+        printint(global_arr[i] == i);
+    }
+}
+
+
+
+int global_x;
+int global_y = 123; // initialization at the beginning of the program
+int global_arr[10];
+int some_variable;
+void main() {
+
+    global_x = 5; // write to global variable
+    increase_global_x(3); // will modify global variable
+    printint(global_x == 8);
+
+    printint(global_y == 123); // global variable was already initialized at the beginning of the program
+
+
+    // support for arrays as well
+    for (int i = 0; i < 10; i++) {
+        global_arr[i] = i;
+    }
+    print_global_arr();
+    print("\n");
+
+    // shadowing
+    some_variable = 123;  // this is a global variable
+    printint(some_variable == 123);
+
+    // entering a new scope (could be if/else/for/while/another function)
+    {
+        int some_variable; // will shadow the global variable
+        some_variable = 99;
+        printint(some_variable == 99);
+    }
+    // exiting scope - shadowing is over
+    // our global value is unchanged
+    printint(some_variable == 123);
+}
+
