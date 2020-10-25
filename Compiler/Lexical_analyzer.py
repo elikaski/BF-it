@@ -49,7 +49,7 @@ def analyze(text):
         ('\+|-|\*|/|%', Token.BINOP),
         ('\*\*|//|%%', Token.UNARY_MULTIPLICATIVE),
 
-        ('<<', Token.BITWISE_SHIFT),
+        ('<<|>>', Token.BITWISE_SHIFT),
 
         ('([a-zA-Z_][a-zA-Z0-9_]*)',    Token.ID),
         ('(\d+)',     Token.NUM),

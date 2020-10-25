@@ -858,6 +858,41 @@ def get_op_between_literals_code(op_token):
 
         return code
 
+    elif op == ">>":
+        # a, b, c, x, y, z
+
+        code = ">" # point to b
+        code += ">[-]" * 4 # clear 4 cells
+        code += "<" * 4 # point to b
+
+        code += "[" # while b != 0
+        code += ">++" # set c to 2
+        code += "<<" # point to a
+
+        code += "[" # while a != 0
+        code += "-" # a -= 1
+        code += ">>-" # c -= 1
+        code += "[>>+>+<<<-]>>>[<<<+>>>-]" # copy c to y (via z)
+        code += "<" # point to y
+
+        code += "-[" # if y == 0
+        code += "<+" # x += 1
+        code += "<++" # set c to 2
+        code += ">>"
+        code += "+" # zero y
+        code += "]" # end if
+
+        code += "<<<<" # point to a
+        code += "]" # end while
+
+        code += ">>>" # point to x
+        code += "[<<<+>>>-]" # move x to a
+        code += "<[-]" # zero c
+        code += "<-" # b -= 1
+        code += "]" # end while
+
+        return code
+
     raise NotImplementedError
 
 

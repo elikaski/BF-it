@@ -1,5 +1,23 @@
 void main() {
-    // Shift left
-    printchar(22 << 2);
+
+    // Shift Left
+    print("Shift Left: ");
+    int x = 2;
+    printint(22 << x);
+    printchar(' ');
+
+    x++;
+    printint(22 << x);
+    printchar(' ');
+
     printint(2 << 2 << 2);
+    printchar('\n');
+
+    // Shift right
+    print("Shift Right: ");
+    printint(128 >> 2);
+    printchar(' ');
+
+    printint(255 >> 2 >> 2);
+    printchar('\n');
 }
