@@ -1,0 +1,5 @@
+void main() {
+    // Shift left
+    printchar(22 << 2);
+    printint(2 << 2 << 2);
+}

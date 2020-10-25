@@ -842,6 +842,22 @@ def get_op_between_literals_code(op_token):
 
         return code
 
+    elif op == "<<":
+        # a, b, temp
+
+        code = ">>[-]"  # zero temp
+        code += "<"  # point to b
+
+        code += "[" # while b != 0
+        code += "<" # point to a
+        code += "[>>+<<-]" # copy a to temp
+        code += ">>" # point to temp
+        code += "[<<++>>-]" # multiply temp by 2 and store result in a
+        code += "<-" # point to b and b -= 1
+        code += "]" # end while
+
+        return code
+
     raise NotImplementedError
 
 

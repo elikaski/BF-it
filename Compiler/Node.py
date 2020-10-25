@@ -44,7 +44,7 @@ class NodeToken(Node):
             assert self.left is None and self.right is None
             return get_token_code(self.ids_map_list, self.token, current_pointer)
 
-        elif self.token.type in [Token.BINOP, Token.RELOP, Token.AND, Token.OR]:
+        elif self.token.type in [Token.BINOP, Token.RELOP, Token.AND, Token.OR, Token.BITWISE_SHIFT]:
             code = self.left.get_code(current_pointer)
             code += self.right.get_code(current_pointer + 1)
             code += "<<"  # point to the first operand

@@ -420,16 +420,32 @@ class FunctionCompiler:
 
         return n
 
+    def shift(self):
+        # shift: additive (<<|>> additive)*
+        n = self.additive()
+
+        token = self.parser.current_token()
+        while token is not None and token.type == Token.BITWISE_SHIFT:
+            self.parser.advance_token()
+            next_additive = self.additive()
+
+            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_additive)
+            n = new_node
+
+            token = self.parser.current_token()
+
+        return n
+
     def relational(self):
-        # relational: additive (==|!=|<|>|<=|>= additive)?
-        a = self.additive()
+        # relational: shift (==|!=|<|>|<=|>= shift)?
+        a = self.shift()
 
         token = self.parser.current_token()
         if token.type != Token.RELOP:  # just an arithmetic expression
             return a
 
         self.parser.advance_token()
-        b = self.additive()
+        b = self.shift()
 
         new_node = NodeToken(self.ids_map_list[:], token=token, left=a, right=b)
         return new_node

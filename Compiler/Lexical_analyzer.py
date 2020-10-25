@@ -49,6 +49,8 @@ def analyze(text):
         ('\+|-|\*|/|%', Token.BINOP),
         ('\*\*|//|%%', Token.UNARY_MULTIPLICATIVE),
 
+        ('<<', Token.BITWISE_SHIFT),
+
         ('([a-zA-Z_][a-zA-Z0-9_]*)',    Token.ID),
         ('(\d+)',     Token.NUM),
         ('(0x[A-Fa-f\d]+)',     Token.NUM),  # hexadecimal number
@@ -99,7 +101,7 @@ def analyze(text):
                 if matched_token in [Token.STRING, Token.CHAR]:
                     # remove quotes at beginning and end, un-escape characters
                     tokens.append(Token(matched_token, line, column, longest_match.group()[1:-1].encode("utf8").decode("unicode_escape")))
-                elif matched_token in [Token.NUM, Token.ID, Token.BINOP, Token.RELOP, Token.ASSIGN, Token.UNARY_MULTIPLICATIVE]:
+                elif matched_token in [Token.NUM, Token.ID, Token.BINOP, Token.RELOP, Token.ASSIGN, Token.UNARY_MULTIPLICATIVE, Token.BITWISE_SHIFT]:
                     tokens.append(Token(matched_token, line, column, longest_match.group()))
                 else:
                     tokens.append(Token(matched_token, line, column))
