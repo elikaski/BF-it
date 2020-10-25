@@ -265,7 +265,7 @@ class NodeArraySetElement(NodeArrayElement):
 
             # create a node for id[exp] + expression
             op_node = self.assign_token_to_op_token(assign_token)
-            op_node.left = NodeArrayGetElement(token_id, node_expression_index)
+            op_node.left = NodeArrayGetElement(self.ids_map_list[:], token_id, node_expression_index)
             op_node.right = node_expression_value
 
             self.node_expression_value = op_node
