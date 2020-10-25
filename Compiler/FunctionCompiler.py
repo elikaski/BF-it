@@ -523,26 +523,28 @@ class FunctionCompiler:
         # increments/decrements (++, --)
         # relative operations (==, !=, <, >, <=, >=)
         # logical operations (!, &&, ||)
-        # assignment (=, +=, -=, *=, /=, %=)
+        # assignment (=, +=, -=, *=, /=, %=, <<=, >>=)
         # this is implemented using a Node class that represents a parse tree
 
         """
         (used reference: https://introcs.cs.princeton.edu/java/11precedence/)
         order of operations (lowest precedence to highest precedence)
-            assignment (=, +=, -=, *=, /=, %=)
+            assignment (=, +=, -=, *=, /=, %=, <<=, >>=)
             logical_or (||)
             logical_and (&&)
             relational (==|!=|<|>|<=|>=)
+            shift (<<|>>)
             additive (+-)
             multiplicative (*/%)
             unary_prefix (!, ++, --)
             unary_postfix (++, --)
 
         expression: assignment
-        assignment: ID (=|+=|-=|*=|/=|%=) expression | logical_or
+        assignment: ID (=|+=|-=|*=|/=|%=|<<=|>>=) expression | logical_or
         logical_or: logical_and (|| logical_and)*
         logical_and: relational (&& relational)*
-        relational: additive (==|!=|<|>|<=|>= additive)?
+        relational: shift (==|!=|<|>|<=|>= shift)?
+        shift: additive ((<<|>>) additive)*
         additive: multiplicative ((PLUS|MINUS) multiplicative)*
         multiplicative: unary_prefix ((MUL|DIV|MOD) unary_prefix)*
         unary_prefix:  ( (!)* unary_prefix ) | ( ( ++ | -- ) literal ) | unary_postfix
@@ -851,7 +853,7 @@ class FunctionCompiler:
                 return self.compile_expression_as_statement()
             elif self.parser.next_token().type == Token.LPAREN:  # ID(...);  (function call)
                 return self.compile_function_call_statement()
-            raise BFSyntaxError("Unexpected '%s' after '%s'. Expected '=|+=|-=|*=|/=|%%=' (assignment), '++|--' (modification) or '(' (function call)" % (str(self.parser.next_token()), str(token)))
+            raise BFSyntaxError("Unexpected '%s' after '%s'. Expected '=|+=|-=|*=|/=|%%=|<<=|>>=' (assignment), '++|--' (modification) or '(' (function call)" % (str(self.parser.next_token()), str(token)))
 
         elif token.type == Token.PRINT:  # print(string);
             return self.compile_print_string()

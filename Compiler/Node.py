@@ -11,7 +11,7 @@ class Node:
         self.ids_map_list = ids_map_list
 
     def assign_token_to_op_token(self, assign_token):
-        assert assign_token.data in ["+=", "-=", "*=", "/=", "%="]
+        assert assign_token.data in ["+=", "-=", "*=", "/=", "%=", "<<=", ">>="]
 
         assignment_map = {
             "+=": Token(Token.BINOP, assign_token.line, assign_token.column, data="+"),
@@ -19,6 +19,8 @@ class Node:
             "*=": Token(Token.BINOP, assign_token.line, assign_token.column, data="*"),
             "/=": Token(Token.BINOP, assign_token.line, assign_token.column, data="/"),
             "%=": Token(Token.BINOP, assign_token.line, assign_token.column, data="%"),
+            "<<=": Token(Token.BITWISE_SHIFT, assign_token.line, assign_token.column, data="<<"),
+            ">>=": Token(Token.BITWISE_SHIFT, assign_token.line, assign_token.column, data=">>"),
         }
 
         op_token = assignment_map[assign_token.data]
@@ -67,7 +69,7 @@ class NodeToken(Node):
                 return code
 
             else:
-                assert self.token.data in ["+=", "-=", "*=", "/=", "%="]
+                assert self.token.data in ["+=", "-=", "*=", "/=", "%=", "<<=", ">>="]
                 # id += expression
                 # create a node for id + expression
 
@@ -241,7 +243,7 @@ class NodeArraySetElement(NodeArrayElement):
     class for setting element of a one-dimensional array
     it receives:
     1. an expression, indicating the required index
-    2. assignment operator (=|+=|-=|*=|/=|%=)
+    2. assignment operator (=|+=|-=|*=|/=|%=|<<=|>>=)
     3. an expression, indicating the value to be used for the assignment
     and returns a code that gets that element
     """
@@ -259,7 +261,7 @@ class NodeArraySetElement(NodeArrayElement):
 
         else:
             # id[exp] += expression
-            assert assign_token.data in ["+=", "-=", "*=", "/=", "%="]
+            assert assign_token.data in ["+=", "-=", "*=", "/=", "%=", "<<=", ">>="]
 
             self.assign_token = Token(Token.ASSIGN, assign_token.line, assign_token.column, data="=")
 
