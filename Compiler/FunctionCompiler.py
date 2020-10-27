@@ -366,11 +366,11 @@ class FunctionCompiler:
             return literal
 
     def unary_prefix(self):
-        # unary_prefix:  ( (!)* unary_prefix ) | ( ( ++ | -- | UNARY_MULTIPLICATIVE) literal ) | unary_postfix
+        # unary_prefix:  ( (!)* unary_prefix ) | ( ( ++ | -- | UNARY_MULTIPLICATIVE | ~ ) literal ) | unary_postfix
 
         token = self.parser.current_token()
 
-        if token.type == Token.NOT:
+        if token.type in [Token.NOT, Token.BITWISE_NOT]:
             self.parser.advance_token()
             unary_prefix = self.unary_prefix()
 
@@ -522,7 +522,7 @@ class FunctionCompiler:
         # parses mathematical expressions (+-*/ ())
         # increments/decrements (++, --)
         # relative operations (==, !=, <, >, <=, >=)
-        # logical operations (!, &&, ||)
+        # logical operations (!, &&, ||, ~)
         # assignment (=, +=, -=, *=, /=, %=, <<=, >>=)
         # this is implemented using a Node class that represents a parse tree
 
@@ -536,7 +536,7 @@ class FunctionCompiler:
             shift (<<|>>)
             additive (+-)
             multiplicative (*/%)
-            unary_prefix (!, ++, --)
+            unary_prefix (!, ++, --, ~)
             unary_postfix (++, --)
 
         expression: assignment
@@ -547,7 +547,7 @@ class FunctionCompiler:
         shift: additive ((<<|>>) additive)*
         additive: multiplicative ((PLUS|MINUS) multiplicative)*
         multiplicative: unary_prefix ((MUL|DIV|MOD) unary_prefix)*
-        unary_prefix:  ( (!)* unary_prefix ) | ( ( ++ | -- ) literal ) | unary_postfix
+        unary_prefix:  ( (!)* unary_prefix ) | ( ( ++ | -- | ~ ) literal ) | unary_postfix
         unary_postfix: literal ( ++ | -- )?
         literal: NUM | CHAR | ID | ID[expression] | TRUE | FALSE | function_call | ( expression )
         """

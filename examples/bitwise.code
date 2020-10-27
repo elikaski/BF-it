@@ -41,4 +41,17 @@ void main() {
     printint(arr[1]);
 
     printchar('\n');
+
+    print("Bitwise Not: ");
+
+    printint(~55);
+    x = 55;
+    printchar(' ');
+    printint(~x);
+    printchar(' ');
+    printint(~~x);
+    printchar(' ');
+    printint(~127);
+
+    printchar('\n');
 }

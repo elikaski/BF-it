@@ -50,6 +50,7 @@ def analyze(text):
         ('\*\*|//|%%', Token.UNARY_MULTIPLICATIVE),
 
         ('<<|>>', Token.BITWISE_SHIFT),
+        ('~', Token.BITWISE_NOT),
 
         ('([a-zA-Z_][a-zA-Z0-9_]*)',    Token.ID),
         ('(\d+)',     Token.NUM),

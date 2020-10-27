@@ -446,6 +446,14 @@ def get_unary_prefix_op_code(token, offset_to_variable=None):
 
         return code
 
+    elif token.type == Token.BITWISE_NOT:
+        # a temp
+        code = "[>+<-]"  # move a into temp
+        code += ">"  # point to temp
+        code += "+[<->-]"  # invert temp into a
+
+        return code
+
     raise NotImplementedError
 
 
