@@ -450,17 +450,34 @@ class FunctionCompiler:
         new_node = NodeToken(self.ids_map_list[:], token=token, left=a, right=b)
         return new_node
 
-    def logical_and(self):
-        # logical_and: relational (&& relational)*
+    def bitwise_and(self):
+        # bitwise_and: relational (& relational)*
 
         n = self.relational()
 
         token = self.parser.current_token()
-        while token is not None and token.type == Token.AND:
+        while token is not None and token.type == Token.BITWISE_AND:
             self.parser.advance_token()
             next_relational = self.relational()
 
             new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_relational)
+            n = new_node
+
+            token = self.parser.current_token()
+
+        return n
+
+    def logical_and(self):
+        # logical_and: bitwise_and (&& bitwise_and)*
+
+        n = self.bitwise_and()
+
+        token = self.parser.current_token()
+        while token is not None and token.type == Token.AND:
+            self.parser.advance_token()
+            next_bitwise_and = self.bitwise_and()
+
+            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_bitwise_and)
             n = new_node
 
             token = self.parser.current_token()

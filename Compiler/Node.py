@@ -11,7 +11,7 @@ class Node:
         self.ids_map_list = ids_map_list
 
     def assign_token_to_op_token(self, assign_token):
-        assert assign_token.data in ["+=", "-=", "*=", "/=", "%=", "<<=", ">>="]
+        assert assign_token.data in ["+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&="]
 
         assignment_map = {
             "+=": Token(Token.BINOP, assign_token.line, assign_token.column, data="+"),
@@ -21,6 +21,7 @@ class Node:
             "%=": Token(Token.BINOP, assign_token.line, assign_token.column, data="%"),
             "<<=": Token(Token.BITWISE_SHIFT, assign_token.line, assign_token.column, data="<<"),
             ">>=": Token(Token.BITWISE_SHIFT, assign_token.line, assign_token.column, data=">>"),
+            "&=": Token(Token.BITWISE_AND, assign_token.line, assign_token.column),
         }
 
         op_token = assignment_map[assign_token.data]
@@ -46,7 +47,7 @@ class NodeToken(Node):
             assert self.left is None and self.right is None
             return get_token_code(self.ids_map_list, self.token, current_pointer)
 
-        elif self.token.type in [Token.BINOP, Token.RELOP, Token.AND, Token.OR, Token.BITWISE_SHIFT]:
+        elif self.token.type in [Token.BINOP, Token.RELOP, Token.AND, Token.OR, Token.BITWISE_SHIFT, Token.BITWISE_AND]:
             code = self.left.get_code(current_pointer)
             code += self.right.get_code(current_pointer + 1)
             code += "<<"  # point to the first operand
@@ -261,7 +262,7 @@ class NodeArraySetElement(NodeArrayElement):
 
         else:
             # id[exp] += expression
-            assert assign_token.data in ["+=", "-=", "*=", "/=", "%=", "<<=", ">>="]
+            assert assign_token.data in ["+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&="]
 
             self.assign_token = Token(Token.ASSIGN, assign_token.line, assign_token.column, data="=")
 

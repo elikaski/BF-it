@@ -43,7 +43,6 @@ void main() {
     printchar('\n');
 
     print("Bitwise Not: ");
-
     printint(~55);
     x = 55;
     printchar(' ');
@@ -52,6 +51,19 @@ void main() {
     printint(~~x);
     printchar(' ');
     printint(~127);
+
+    printchar('\n');
+
+    print("Bitwise And: ");
+    x = 0xf3;
+    printint(x & 0x0f);
+    printchar(' ');
+    printint((x & 0xf0) >> 4);
+    printchar(' ');
+
+    arr[1] = 0x5a;
+    arr[1] &= 0xaa;
+    printint(arr[1]);
 
     printchar('\n');
 }

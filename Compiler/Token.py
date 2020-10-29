@@ -33,6 +33,7 @@ class Token(object):
 
     BITWISE_SHIFT = "BITWISE_SHIFT"
     BITWISE_NOT = "BITWISE_NOT"
+    BITWISE_AND = "BITWISE_AND"
 
     WHITESPACE = "WHITESPACE"
     ID = "ID"
