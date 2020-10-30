@@ -365,6 +365,8 @@ def get_divmod_code():
 
 def get_bitwise_code(code_logic):
     # a, b, c, w, x, y, z, bit1, bitcounter, res
+    # code_logic uses the cells y, z, and bit1. Where y is res and z and bit1 are the bits.
+    # y is zero. z and bit1 should be zero after code_logic.
 
     code = ">" * 7  # point to bit1
     code += "[-]"  # zero bit1
@@ -992,6 +994,11 @@ def get_op_between_literals_code(op_token):
 
     elif op_token.type == Token.BITWISE_AND:
         code = get_bitwise_code("[->[-<<+>>]<]>[-]")
+
+        return code
+
+    elif op_token.type == Token.BITWISE_OR:
+        code = get_bitwise_code("[>+<-]>[[-]<<+>>]")
 
         return code
 
