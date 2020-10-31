@@ -41,7 +41,7 @@ def analyze(text):
         ('\}', Token.RBRACE),
         ('\[', Token.LBRACK),
         ('\]', Token.RBRACK),
-        ('=|\+=|-=|\*=|/=|%=|<<=|>>=|&=|\|=', Token.ASSIGN),
+        ('=|\+=|-=|\*=|/=|%=|<<=|>>=|&=|\|=|\^=', Token.ASSIGN),
 
         ('<=|>=|==|!=|<|>', Token.RELOP),
         ('\+\+', Token.INCREMENT),
@@ -53,6 +53,7 @@ def analyze(text):
         ('~', Token.BITWISE_NOT),
         ('&', Token.BITWISE_AND),
         ('\|', Token.BITWISE_OR),
+        ('\^', Token.BITWISE_XOR),
 
         ('([a-zA-Z_][a-zA-Z0-9_]*)',    Token.ID),
         ('(\d+)',     Token.NUM),

@@ -1002,6 +1002,11 @@ def get_op_between_literals_code(op_token):
 
         return code
 
+    elif op_token.type == Token.BITWISE_XOR:
+        code = get_bitwise_code("[>-<-]>[[-]<<+>>]")
+
+        return code
+
     raise NotImplementedError
 
 
