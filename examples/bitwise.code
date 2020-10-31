@@ -91,4 +91,12 @@ void main() {
     printint(arr[1]);
 
     printchar('\n');
+
+    print("Order of Execution Test: ");
+    x = 1 | 2 ^ 3 & 5;
+
+    if(x != (1 | (2 ^ (3 & 5)))) {
+        print("Not ");
+    }
+    print("Working\n");
 }
