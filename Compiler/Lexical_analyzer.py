@@ -41,13 +41,19 @@ def analyze(text):
         ('\}', Token.RBRACE),
         ('\[', Token.LBRACK),
         ('\]', Token.RBRACK),
-        ('=|\+=|-=|\*=|/=|%=', Token.ASSIGN),
+        ('=|\+=|-=|\*=|/=|%=|<<=|>>=|&=|\|=|\^=', Token.ASSIGN),
 
         ('<=|>=|==|!=|<|>', Token.RELOP),
         ('\+\+', Token.INCREMENT),
         ('--', Token.DECREMENT),
         ('\+|-|\*|/|%', Token.BINOP),
         ('\*\*|//|%%', Token.UNARY_MULTIPLICATIVE),
+
+        ('<<|>>', Token.BITWISE_SHIFT),
+        ('~', Token.BITWISE_NOT),
+        ('&', Token.BITWISE_AND),
+        ('\|', Token.BITWISE_OR),
+        ('\^', Token.BITWISE_XOR),
 
         ('([a-zA-Z_][a-zA-Z0-9_]*)',    Token.ID),
         ('(\d+)',     Token.NUM),
@@ -99,7 +105,7 @@ def analyze(text):
                 if matched_token in [Token.STRING, Token.CHAR]:
                     # remove quotes at beginning and end, un-escape characters
                     tokens.append(Token(matched_token, line, column, longest_match.group()[1:-1].encode("utf8").decode("unicode_escape")))
-                elif matched_token in [Token.NUM, Token.ID, Token.BINOP, Token.RELOP, Token.ASSIGN, Token.UNARY_MULTIPLICATIVE]:
+                elif matched_token in [Token.NUM, Token.ID, Token.BINOP, Token.RELOP, Token.ASSIGN, Token.UNARY_MULTIPLICATIVE, Token.BITWISE_SHIFT]:
                     tokens.append(Token(matched_token, line, column, longest_match.group()))
                 else:
                     tokens.append(Token(matched_token, line, column))

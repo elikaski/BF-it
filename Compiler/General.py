@@ -363,6 +363,97 @@ def get_divmod_code():
     return code
 
 
+def get_bitwise_code(code_logic):
+    # a, b, c, w, x, y, z, bit1, bitcounter, res
+    # code_logic uses the cells y, z, and bit1. Where y is res and z and bit1 are the bits.
+    # y is zero. z and bit1 should be zero after code_logic.
+
+    code = ">" * 7  # point to bit1
+    code += "[-]"  # zero bit1
+    code += ">"  # point to bitcounter
+    code += ">[-]<"  # zero res
+
+    code += "[-]--------[++++++++"  # while bitcounter != 8:
+    code += "<"
+    code += "<[-]" * 5  # clear c, w, x, y, z
+    code += "++"  # c = 2
+    code += "<<"  # point to a
+
+    code += "["  # while a != 0:
+    code +=     "-"  # a -= 1
+    code +=     ">>-"  # c -= 1
+    code +=     "[>+>>+<<<-]>[<+>-]"  # copy c to y (using w)
+    code +=     ">>"  # point to y
+    code +=     ">>+<<"  # bit1 += 1
+
+    code +=     "-["  # if y != 1:
+    code +=         "<+"  # x += 1
+    code +=         "<<++"  # c += 2 (c was 0)
+    code +=         ">" * 5  # point to bit1
+    code +=         "--"  # bit1 -= 2 (bit1 was 2)
+    code +=         "<<"  # point to y
+    code +=         "+"  # set y to 0
+    code +=     "]"  # end if
+
+    code +=     "<<<<<"  # point to a
+    code += "]"  # end while
+
+    code += ">>>>[<<<<+>>>>-]"  # move x to a (x is a/2)
+    code += "<<[-]++"  # c = 2
+    code += "<"  # point to b
+
+    code += "["  # while b != 0:
+    code +=     "-"  # b -= 1
+    code +=     ">-"  # c -= 1
+    code +=     "[>+>>+<<<-]>[<+>-]"  # copy c to y (using w)
+    code +=     ">>"  # point to y
+    code +=     ">+<"  # z += 1
+
+    code +=     "-["  # if y != 1:
+    code +=         ">--<"  # z -= 2 (z was 2)
+    code +=         "<+"  # x += 1
+    code +=         "<<++"  # c += 2 (c was 0)
+    code +=         ">>>"  # point to y
+    code +=         "+"  # set y to 0
+    code +=     "]"
+
+    code +=     "<<<<"  # point to b
+    code += "]"  # end while
+
+    # w is a % 2
+    # x is a / 2
+
+    code += ">>>[<<<+>>>-]"  # move x to b
+
+    code += ">>"  # point to z
+    code += code_logic  # pointer ends at bit1, z and bit1 should be 0 after code
+
+    code += ">[<+<+>>-]<[>+<-]" # copy bit to z (using bit1)
+
+    # y = y << z
+    code += "<"
+    code += "["  # while z != 0:
+    code += "<"  # point to y
+    code += "[<+>-]"  # copy y to x
+    code += "<[>++<-]"  # copy x to y * 2
+    code += ">>-"  # z -= 1
+    code += "]"
+
+    code += "<"  # point to y
+    code += "[>>>>+<<<<-]"  # res += y
+
+    code += ">>>"  # point to bitcounter
+    code += "-" * 7  # loop if bitcounter != 7
+
+    code += "]"  # end while
+
+    code += ">[<<<<<<<<<+>>>>>>>>>-]"  # move res to a
+    code += "<<<<<<<<"  # point to b
+
+
+    return code
+
+
 def get_unary_prefix_op_code(token, offset_to_variable=None):
     # returns code that:
     # performs op on operand that is at the current pointer
@@ -443,6 +534,14 @@ def get_unary_prefix_op_code(token, offset_to_variable=None):
 
         code += "[" + "<" * (offset + 1) + "+" + ">" * (offset + 1) + "-]"  # copy temp back to destination
         # at this point we point to the next available cell, which is temp, which is now zero
+
+        return code
+
+    elif token.type == Token.BITWISE_NOT:
+        # a temp
+        code = "[>+<-]"  # move a into temp
+        code += ">"  # point to temp
+        code += "+[<->-]"  # invert temp into a
 
         return code
 
@@ -839,6 +938,72 @@ def get_op_between_literals_code(op_token):
         code += "]"  # end if
 
         code += "<"  # point to b (next available cell)
+
+        return code
+
+    elif op == "<<":
+        # a, b, temp
+
+        code = ">>[-]"  # zero temp
+        code += "<"  # point to b
+
+        code += "[" # while b != 0
+        code += "<" # point to a
+        code += "[>>+<<-]" # copy a to temp
+        code += ">>" # point to temp
+        code += "[<<++>>-]" # multiply temp by 2 and store result in a
+        code += "<-" # point to b and b -= 1
+        code += "]" # end while
+
+        return code
+
+    elif op == ">>":
+        # a, b, c, x, y, z
+
+        code = ">" # point to b
+        code += ">[-]" * 4 # clear 4 cells
+        code += "<" * 4 # point to b
+
+        code += "[" # while b != 0
+        code += ">++" # set c to 2
+        code += "<<" # point to a
+
+        code += "[" # while a != 0
+        code += "-" # a -= 1
+        code += ">>-" # c -= 1
+        code += "[>>+>+<<<-]>>>[<<<+>>>-]" # copy c to y (via z)
+        code += "<" # point to y
+
+        code += "-[" # if y == 0
+        code += "<+" # x += 1
+        code += "<++" # set c to 2
+        code += ">>"
+        code += "+" # zero y
+        code += "]" # end if
+
+        code += "<<<<" # point to a
+        code += "]" # end while
+
+        code += ">>>" # point to x
+        code += "[<<<+>>>-]" # move x to a
+        code += "<[-]" # zero c
+        code += "<-" # b -= 1
+        code += "]" # end while
+
+        return code
+
+    elif op_token.type == Token.BITWISE_AND:
+        code = get_bitwise_code("[->[-<<+>>]<]>[-]")
+
+        return code
+
+    elif op_token.type == Token.BITWISE_OR:
+        code = get_bitwise_code("[>+<-]>[[-]<<+>>]")
+
+        return code
+
+    elif op_token.type == Token.BITWISE_XOR:
+        code = get_bitwise_code("[>-<-]>[[-]<<+>>]")
 
         return code
 

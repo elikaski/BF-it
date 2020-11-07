@@ -366,11 +366,11 @@ class FunctionCompiler:
             return literal
 
     def unary_prefix(self):
-        # unary_prefix:  ( (!)* unary_prefix ) | ( ( ++ | -- | UNARY_MULTIPLICATIVE) literal ) | unary_postfix
+        # unary_prefix:  ( (!)* unary_prefix ) | ( ( ++ | -- | UNARY_MULTIPLICATIVE | ~ ) literal ) | unary_postfix
 
         token = self.parser.current_token()
 
-        if token.type == Token.NOT:
+        if token.type in [Token.NOT, Token.BITWISE_NOT]:
             self.parser.advance_token()
             unary_prefix = self.unary_prefix()
 
@@ -420,31 +420,98 @@ class FunctionCompiler:
 
         return n
 
+    def shift(self):
+        # shift: additive (<<|>> additive)*
+        n = self.additive()
+
+        token = self.parser.current_token()
+        while token is not None and token.type == Token.BITWISE_SHIFT:
+            self.parser.advance_token()
+            next_additive = self.additive()
+
+            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_additive)
+            n = new_node
+
+            token = self.parser.current_token()
+
+        return n
+
     def relational(self):
-        # relational: additive (==|!=|<|>|<=|>= additive)?
-        a = self.additive()
+        # relational: shift (==|!=|<|>|<=|>= shift)?
+        a = self.shift()
 
         token = self.parser.current_token()
         if token.type != Token.RELOP:  # just an arithmetic expression
             return a
 
         self.parser.advance_token()
-        b = self.additive()
+        b = self.shift()
 
         new_node = NodeToken(self.ids_map_list[:], token=token, left=a, right=b)
         return new_node
 
-    def logical_and(self):
-        # logical_and: relational (&& relational)*
+    def bitwise_and(self):
+        # bitwise_and: relational (& relational)*
 
         n = self.relational()
 
         token = self.parser.current_token()
-        while token is not None and token.type == Token.AND:
+        while token is not None and token.type == Token.BITWISE_AND:
             self.parser.advance_token()
             next_relational = self.relational()
 
             new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_relational)
+            n = new_node
+
+            token = self.parser.current_token()
+
+        return n
+
+    def bitwise_xor(self):
+        # bitwise_xor: bitwise_and (| bitwise_and)*
+
+        n = self.bitwise_and()
+
+        token = self.parser.current_token()
+        while token is not None and token.type == Token.BITWISE_XOR:
+            self.parser.advance_token()
+            next_bitwise_and = self.bitwise_and()
+
+            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_bitwise_and)
+            n = new_node
+
+            token = self.parser.current_token()
+
+        return n
+
+    def bitwise_or(self):
+        # bitwise_or: bitwise_xor (| bitwise_xor)*
+
+        n = self.bitwise_xor()
+
+        token = self.parser.current_token()
+        while token is not None and token.type == Token.BITWISE_OR:
+            self.parser.advance_token()
+            next_bitwise_xor = self.bitwise_xor()
+
+            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_bitwise_xor)
+            n = new_node
+
+            token = self.parser.current_token()
+
+        return n
+
+    def logical_and(self):
+        # logical_and: bitwise_or (&& bitwise_or)*
+
+        n = self.bitwise_or()
+
+        token = self.parser.current_token()
+        while token is not None and token.type == Token.AND:
+            self.parser.advance_token()
+            next_bitwise_or = self.bitwise_or()
+
+            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_bitwise_or)
             n = new_node
 
             token = self.parser.current_token()
@@ -506,30 +573,38 @@ class FunctionCompiler:
         # parses mathematical expressions (+-*/ ())
         # increments/decrements (++, --)
         # relative operations (==, !=, <, >, <=, >=)
-        # logical operations (!, &&, ||)
-        # assignment (=, +=, -=, *=, /=, %=)
+        # logical operations (!, &&, ||, ~)
+        # assignment (=, +=, -=, *=, /=, %=, <<=, >>=, &=, |=, ^=)
         # this is implemented using a Node class that represents a parse tree
 
         """
         (used reference: https://introcs.cs.princeton.edu/java/11precedence/)
         order of operations (lowest precedence to highest precedence)
-            assignment (=, +=, -=, *=, /=, %=)
+            assignment (=, +=, -=, *=, /=, %=, <<=, >>=, &=, |=, ^=)
             logical_or (||)
             logical_and (&&)
+            bitwise_or (|)
+            bitwise_xor (^)
+            bitwise_and (&)
             relational (==|!=|<|>|<=|>=)
+            shift (<<|>>)
             additive (+-)
             multiplicative (*/%)
-            unary_prefix (!, ++, --)
+            unary_prefix (!, ++, --, ~)
             unary_postfix (++, --)
 
         expression: assignment
-        assignment: ID (=|+=|-=|*=|/=|%=) expression | logical_or
+        assignment: ID (=|+=|-=|*=|/=|%=|<<=|>>=|&=|(|=)|^=) expression | logical_or
         logical_or: logical_and (|| logical_and)*
-        logical_and: relational (&& relational)*
-        relational: additive (==|!=|<|>|<=|>= additive)?
+        logical_and: bitwise_or (&& bitwise_or)*
+        bitwise_or: bitwise_xor (| bitwise_xor)*
+        bitwise_xor: bitwise_and (^ bitwise_and)*
+        bitwise_and: relational (& relational)*
+        relational: shift (==|!=|<|>|<=|>= shift)?
+        shift: additive ((<<|>>) additive)*
         additive: multiplicative ((PLUS|MINUS) multiplicative)*
         multiplicative: unary_prefix ((MUL|DIV|MOD) unary_prefix)*
-        unary_prefix:  ( (!)* unary_prefix ) | ( ( ++ | -- ) literal ) | unary_postfix
+        unary_prefix:  ( (!)* unary_prefix ) | ( ( ++ | -- | ~ ) literal ) | unary_postfix
         unary_postfix: literal ( ++ | -- )?
         literal: NUM | CHAR | ID | ID[expression] | TRUE | FALSE | function_call | ( expression )
         """
@@ -835,7 +910,7 @@ class FunctionCompiler:
                 return self.compile_expression_as_statement()
             elif self.parser.next_token().type == Token.LPAREN:  # ID(...);  (function call)
                 return self.compile_function_call_statement()
-            raise BFSyntaxError("Unexpected '%s' after '%s'. Expected '=|+=|-=|*=|/=|%%=' (assignment), '++|--' (modification) or '(' (function call)" % (str(self.parser.next_token()), str(token)))
+            raise BFSyntaxError("Unexpected '%s' after '%s'. Expected '=|+=|-=|*=|/=|%%=|<<=|>>=|&=|(|=)|^=' (assignment), '++|--' (modification) or '(' (function call)" % (str(self.parser.next_token()), str(token)))
 
         elif token.type == Token.PRINT:  # print(string);
             return self.compile_print_string()

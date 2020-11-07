@@ -1,0 +1,102 @@
+void main() {
+    print("Shift Left: ");
+    int x = 2;
+    printint(22 << x);
+    printchar(' ');
+
+    x++;
+    printint(22 << x);
+    printchar(' ');
+
+    printint(2 << 2 << 2);
+    printchar('\n');
+
+    print("Shift Right: ");
+    printint(128 >> 2);
+    printchar(' ');
+
+    printint(255 >> 2 >> 2);
+    printchar('\n');
+
+    print("Shift Assignment: ");
+    x = 1;
+    for(int i = 0; i < 7; i++) {
+        printint(x);
+        printchar(' ');
+        x <<= 1;
+    }
+    for(int i = 0; i < 8; i++) {
+        printint(x);
+        printchar(' ');
+        x >>= 1;
+    }
+
+    int arr[2];
+
+    arr[1] = 1;
+    arr[1] <<= 2;
+    printint(arr[1]);
+
+    printchar('\n');
+
+    print("Bitwise Not: ");
+    printint(~55);
+    x = 55;
+    printchar(' ');
+    printint(~x);
+    printchar(' ');
+    printint(~~x);
+    printchar(' ');
+    printint(~127);
+
+    printchar('\n');
+
+    print("Bitwise And: ");
+    x = 0xf3;
+    printint(x & 0x0f);
+    printchar(' ');
+    printint((x & 0xf0) >> 4);
+    printchar(' ');
+
+    arr[1] = 0x5a;
+    arr[1] &= 0xaa;
+    printint(arr[1]);
+
+    printchar('\n');
+
+    print("Bitwise Or: ");
+    printint(55 | 8);
+    printchar(' ');
+    x = 3;
+    x |= 1 << 2;
+    printint(x);
+    printchar(' ');
+
+    arr[1] = 34;
+    arr[1] |= 6;
+    printint(arr[1]);
+
+    printchar('\n');
+
+    print("Bitwise Xor: ");
+    printint(55 ^ 9);
+    printchar(' ');
+    x = 3;
+    x ^= 1 << 1;
+    printint(x);
+    printchar(' ');
+
+    arr[1] = 34;
+    arr[1] ^= 6;
+    printint(arr[1]);
+
+    printchar('\n');
+
+    print("Order of Execution Test: ");
+    x = 1 | 2 ^ 3 & 5;
+
+    if(x != (1 | (2 ^ (3 & 5)))) {
+        print("Not ");
+    }
+    print("Working\n");
+}
