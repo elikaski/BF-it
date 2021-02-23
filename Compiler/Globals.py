@@ -13,6 +13,17 @@ global_variables = list()  # Global list of global variables
 functions = dict()  # Global dictionary of function_name --> FunctionCompiler objects
 
 
+class LibraryFunctionCompiler:
+    def __init__(self, name, type, parameters, code):
+        self.name = name
+        self.type = type
+        self.parameters = parameters
+        self.code = code
+
+    def get_code(self, current_stack_pointer):
+        return self.code
+
+
 # General Error classes
 
 
@@ -46,7 +57,6 @@ def get_function_object(name):
 
 def insert_library_functions():
     from Compiler.General import get_readint_code, get_printint_code, get_readchar_code, get_printchar_code
-    from Compiler.FunctionCompiler import LibraryFunctionCompiler
 
     readint = LibraryFunctionCompiler("readint", Token.INT, list(), get_readint_code())
     insert_function_object(readint)
@@ -89,7 +99,7 @@ def create_variable(name, type, dimensions):
     variable = namedtuple("variable", ["name", "type", "size", "cell_index"])
 
     variable.name = name
-    variable. type = type
+    variable.type = type
     variable.dimensions = dimensions  # list of array dimensions sizes (for non-arrays it will be [1])
     variable.cell_index = None  # will be updated when we insert this variable into an ids map
 
@@ -98,7 +108,7 @@ def create_variable(name, type, dimensions):
 
 def get_variable_size(variable):
     # return total variable size
-    return reduce(lambda x,y: x*y, variable.dimensions)
+    return reduce(lambda x, y: x*y, variable.dimensions)
 
 
 def create_variable_from_definition(parser, index=None, advance_tokens=False):
@@ -115,7 +125,6 @@ def create_variable_from_definition(parser, index=None, advance_tokens=False):
 
     parser.check_next_tokens_are([Token.ID], starting_index=index)
     ID = parser.tokens[index + 1].data
-    type = Token.INT
 
     if advance_tokens:
         parser.advance_token(amount=2)  # skip INT ID
@@ -132,5 +141,5 @@ def create_variable_from_definition(parser, index=None, advance_tokens=False):
     else:
         dimensions = [1]
 
-    variable = create_variable(ID, type, dimensions)
+    variable = create_variable(ID, Token.INT, dimensions)
     return variable

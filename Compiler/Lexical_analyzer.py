@@ -75,7 +75,6 @@ def analyze(text):
 
     i = 0
     while i < len(text):
-
         current_matches = []
         for regex, token_type in rules:
             m = regex.match(text, i)

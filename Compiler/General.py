@@ -139,8 +139,8 @@ def get_set_cell_value_code(new_value, previous_value, zero_next_cell_if_necessa
 
 
 def get_move_to_offset_code(offset):
-    #  returns code that moves value from current pointer to cell at offset <offset> to the left
-    #  after this, the pointer points to the original cell, which is now the next available cell
+    # returns code that moves value from current pointer to cell at offset <offset> to the left
+    # after this, the pointer points to the original cell, which is now the next available cell
 
     code = "<" * offset  # point to destination
     code += "[-]"  # zero destination
@@ -152,8 +152,8 @@ def get_move_to_offset_code(offset):
 
 
 def get_copy_to_offset_code(offset):
-    #  returns code that copies value from current pointer to cell at offset <offset> to the left
-    #  after this, the pointer points to the original cell, which remains unchanged
+    # returns code that copies value from current pointer to cell at offset <offset> to the left
+    # after this, the pointer points to the original cell, which remains unchanged
 
     code = ">"  # point to temp
     code += "[-]"  # zero temp
@@ -177,15 +177,15 @@ def get_copy_to_variable_code(ids_map_list, ID_token, current_pointer):
 
 
 def get_move_to_return_value_cell_code(return_value_cell, current_stack_pointer):
-    #  returns code that moves value from current pointer to return_value cell
-    #  after this, the pointer points to the original cell, which is now the next available cell
+    # returns code that moves value from current pointer to return_value cell
+    # after this, the pointer points to the original cell, which is now the next available cell
 
     # we need to move it <current_stack_pointer - return_value_cell> cells left
     return get_move_to_offset_code(current_stack_pointer - return_value_cell)
 
 
 def get_copy_from_variable_code(ids_map_list, ID_token, current_pointer):
-    #  returns code that copies value from cell of variable ID to current pointer, and then sets the pointer to the next cell
+    # returns code that copies value from cell of variable ID to current pointer, and then sets the pointer to the next cell
 
     offset = get_offset_to_variable(ids_map_list, ID_token, current_pointer)
     code = "[-]"  # res = 0
@@ -428,7 +428,7 @@ def get_bitwise_code(code_logic):
     code += ">>"  # point to z
     code += code_logic  # pointer ends at bit1, z and bit1 should be 0 after code
 
-    code += ">[<+<+>>-]<[>+<-]" # copy bit to z (using bit1)
+    code += ">[<+<+>>-]<[>+<-]"  # copy bit to z (using bit1)
 
     # y = y << z
     code += "<"
@@ -449,7 +449,6 @@ def get_bitwise_code(code_logic):
 
     code += ">[<<<<<<<<<+>>>>>>>>>-]"  # move res to a
     code += "<<<<<<<<"  # point to b
-
 
     return code
 
@@ -947,48 +946,48 @@ def get_op_between_literals_code(op_token):
         code = ">>[-]"  # zero temp
         code += "<"  # point to b
 
-        code += "[" # while b != 0
-        code += "<" # point to a
-        code += "[>>+<<-]" # copy a to temp
-        code += ">>" # point to temp
-        code += "[<<++>>-]" # multiply temp by 2 and store result in a
-        code += "<-" # point to b and b -= 1
-        code += "]" # end while
+        code += "["  # while b != 0
+        code += "<"  # point to a
+        code += "[>>+<<-]"  # copy a to temp
+        code += ">>"  # point to temp
+        code += "[<<++>>-]"  # multiply temp by 2 and store result in a
+        code += "<-"  # point to b and b -= 1
+        code += "]"  # end while
 
         return code
 
     elif op == ">>":
         # a, b, c, x, y, z
 
-        code = ">" # point to b
-        code += ">[-]" * 4 # clear 4 cells
-        code += "<" * 4 # point to b
+        code = ">"  # point to b
+        code += ">[-]" * 4  # clear 4 cells
+        code += "<" * 4  # point to b
 
-        code += "[" # while b != 0
-        code += ">++" # set c to 2
-        code += "<<" # point to a
+        code += "["  # while b != 0
+        code += ">++"  # set c to 2
+        code += "<<"  # point to a
 
-        code += "[" # while a != 0
-        code += "-" # a -= 1
-        code += ">>-" # c -= 1
-        code += "[>>+>+<<<-]>>>[<<<+>>>-]" # copy c to y (via z)
-        code += "<" # point to y
+        code += "["  # while a != 0
+        code += "-"  # a -= 1
+        code += ">>-"  # c -= 1
+        code += "[>>+>+<<<-]>>>[<<<+>>>-]"  # copy c to y (via z)
+        code += "<"  # point to y
 
-        code += "-[" # if y == 0
-        code += "<+" # x += 1
-        code += "<++" # set c to 2
+        code += "-["  # if y == 0
+        code += "<+"  # x += 1
+        code += "<++"  # set c to 2
         code += ">>"
-        code += "+" # zero y
-        code += "]" # end if
+        code += "+"  # zero y
+        code += "]"  # end if
 
-        code += "<<<<" # point to a
-        code += "]" # end while
+        code += "<<<<"  # point to a
+        code += "]"  # end while
 
-        code += ">>>" # point to x
-        code += "[<<<+>>>-]" # move x to a
-        code += "<[-]" # zero c
-        code += "<-" # b -= 1
-        code += "]" # end while
+        code += ">>>"  # point to x
+        code += "[<<<+>>>-]"  # move x to a
+        code += "<[-]"  # zero c
+        code += "<-"  # b -= 1
+        code += "]"  # end while
 
         return code
 

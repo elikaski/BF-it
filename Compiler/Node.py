@@ -5,6 +5,7 @@ This file holds classes that are used to create the parse tree of expressions
 Each class implements a get_code() function that receives a "stack pointer" and returns code that evaluates the expression
 """
 
+
 class Node:
     def __init__(self, ids_map_list):
         # holds a copy of ids_map_list as it was when we parsed the expression
@@ -88,7 +89,7 @@ class NodeToken(Node):
 
 
 class NodeUnaryPrefix(Node):
-    def __init__(self, ids_map_list, operation, literal, *kargs, **kwargs):
+    def __init__(self, ids_map_list, operation, literal):
         Node.__init__(self, ids_map_list)
         self.token_operation = operation
         self.node_literal = literal
@@ -134,7 +135,7 @@ class NodeUnaryPrefix(Node):
 
 
 class NodeUnaryPostfix(Node):
-    def __init__(self, ids_map_list, operation, literal, *kargs, **kwargs):
+    def __init__(self, ids_map_list, operation, literal):
         Node.__init__(self, ids_map_list)
         self.token_operation = operation
         self.node_literal = literal
@@ -320,4 +321,3 @@ class NodeArraySetElement(NodeArrayElement):
         # now value is at the desired cell, and we point to the next available cell
 
         return code
-

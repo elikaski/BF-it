@@ -10,20 +10,20 @@ import Interpreter
 def process_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("filepath", metavar="input_file", nargs=1, help="Path to the input code file")
-    parser.add_argument("-o", metavar="output_file", nargs=1, help="Path to output Brainfuck file")
-    parser.add_argument("-r", action="store_true", help="Run the Brainfuck file after compilation")
-    parser.add_argument("-m", "--minify", dest="minify", action="store_true", help="Minifies the compiled code")
+    parser.add_argument("--output", "-o", metavar="output_file", nargs=1, help="Path to output Brainfuck file")
+    parser.add_argument("--run", "-r", action="store_true", help="Run the Brainfuck file after compilation")
+    parser.add_argument("--minify", "-m", action="store_true", help="Minifies the compiled code")
 
     args = parser.parse_args()
 
     input_file = args.filepath[0]
-    if args.o:
-        output_file = args.o[0]
+    if args.output:
+        output_file = args.output[0]
     else:
         output_file_basename = os.path.splitext(os.path.basename(input_file))[0] + ".bf"
         output_file = os.path.join(os.path.dirname(input_file), output_file_basename)
 
-    run_file = args.r
+    run_file = args.run
     minify_file = args.minify
 
     return input_file, output_file, run_file, minify_file
@@ -53,5 +53,5 @@ def compile_file(input_file, output_file, run, minify_file):
 
 if __name__ == '__main__':
     input_file, output_file, run_file, minify_file = process_args()
-    #input_file = "examples/games/tic_tac_toe.code"
+    # input_file = "examples/games/tic_tac_toe.code"
     compile_file(input_file, output_file, run_file, minify_file)

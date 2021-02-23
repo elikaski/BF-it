@@ -19,19 +19,7 @@ FunctionCompiler object holds tokens correspond to the function so that we can c
 """
 
 
-class LibraryFunctionCompiler:
-    def __init__(self, name, type, parameters, code):
-        self.name = name
-        self.type = type
-        self.parameters = parameters
-        self.code = code
-
-    def get_code(self, current_stack_pointer):
-        return self.code
-
-
 class FunctionCompiler:
-
     def __init__(self, name, tokens):
         self.name = name
         self.tokens = tokens
@@ -89,7 +77,7 @@ class FunctionCompiler:
         # new stack pointer should be at least that size
         assert self.current_stack_pointer() <= current_stack_pointer
         self.return_value_cell = current_stack_pointer
-        self.set_stack_pointer(current_stack_pointer+1) #  make room for return_value cell. next available cell is the next one after it.
+        self.set_stack_pointer(current_stack_pointer+1)  # make room for return_value cell. next available cell is the next one after it.
         function_code = self.compile_function_scope(self.parameters)
         self.remove_ids_map()  # Global variables
         return function_code
@@ -1001,4 +989,3 @@ class FunctionCompiler:
         code += "<"  # point to return_value_cell
 
         return code
-
