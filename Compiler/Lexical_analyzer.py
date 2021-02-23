@@ -58,8 +58,8 @@ def analyze(text):
         ('([a-zA-Z_][a-zA-Z0-9_]*)',    Token.ID),
         ('(\d+)',     Token.NUM),
         ('(0x[A-Fa-f\d]+)',     Token.NUM),  # hexadecimal number
-        ('\"([^\"])*\"',   Token.STRING),
-        ('\'(\\\\)?[^\']\'', Token.CHAR),
+        (r'\"(\\\"|[^"])*"',   Token.STRING),
+        (r'\'(\\\'|(\\)?[^\'])\'', Token.CHAR),
         ('//.*(\\n|$)', Token.COMMENT),
         (r'/\*[\s\S]*?\*/', Token.COMMENT),  # multiline comments
         ('.',       Token.UNIDENTIFIED)
