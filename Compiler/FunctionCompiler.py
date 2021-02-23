@@ -749,6 +749,35 @@ class FunctionCompiler:
         self.increase_stack_pointer(amount=2)
         inside_if_code = self.compile_scope()
 
+        if self.parser.next_token().type == Token.IF:
+            # compile if(...) { } else if(...) {} as if(...) { } else {if(...) {}}
+            self.parser.advance_token()
+            inner_if_code = self.compile_if()
+            self.decrease_stack_pointer(amount=2)
+
+            code = expression_code  # evaluate expression. after this we point to "execute_else" cell
+            code += "[-]+"  # execute_else = 1
+            code += "<"  # point to the expression
+            code += "["  # if it is non-zero
+            code += ">-"  # execute_else = 0
+            code += ">"  # point to next available cell
+            code += inside_if_code  # after this we point to the same cell (one after execute_else)
+            code += "<<"  # point to expression
+            code += "[-]"  # expression = 0
+            code += "]"  # end if
+
+            code += ">"  # point to execute_else
+            code += "["  # if it is non-zero
+            code += ">"  # point to next available cell
+            code += inner_if_code  # after this we point to the same cell (one after execute_else)
+            code += "<"  # point to execute_else
+            code += "-"  # execute_else = 0
+            code += "]"  # end if
+
+            code += "<"  # point to next available cell (what used to be expression_code)
+
+            return code
+
         self.parser.check_current_tokens_are([Token.ELSE, Token.LBRACE])
         self.parser.advance_token()  # skip the 'else'
         inside_else_code = self.compile_scope()

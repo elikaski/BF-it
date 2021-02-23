@@ -1,0 +1,22 @@
+int main() {
+    int _case = 1;
+
+    while(_case < 8) {
+        if(_case == 1) {
+            print("case 1\n");
+        } else if(_case == 2) {
+            print("case 2\n");
+        } else if(_case == 3) {
+            print("case 3\n");
+        } else if(_case == 4) {
+            print("case 4\n");
+        } else if(_case == 5) {
+            print("case 5\n");
+        } else if(_case == 6) {
+            print("case 6\n");
+        } else {
+            print("case else\n");
+        }
+        _case++;
+    }
+}
