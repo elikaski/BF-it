@@ -19,6 +19,17 @@ FunctionCompiler object holds tokens correspond to the function so that we can c
 """
 
 
+class LibraryFunctionCompiler:
+    def __init__(self, name, type, parameters, code):
+        self.name = name
+        self.type = type
+        self.parameters = parameters
+        self.code = code
+
+    def get_code(self, current_stack_pointer):
+        return self.code
+
+
 class FunctionCompiler:
     def __init__(self, name, tokens):
         self.name = name

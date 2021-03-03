@@ -106,7 +106,6 @@ class NodeUnaryPrefix(Node):
             return code
         else:
             # its INCREMENT or DECREMENT
-
             if isinstance(self.node_literal, NodeArrayGetElement):
                 token_id, index_node = self.node_literal.token_id, self.node_literal.node_expression
                 code = get_move_right_index_cells_code(current_pointer, index_node)
@@ -141,7 +140,6 @@ class NodeUnaryPostfix(Node):
         self.node_literal = literal
 
     def get_code(self, current_pointer, *args, **kwargs):
-
         # its an unary postfix operation (x++)
         assert self.token_operation.type in [Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE]
 
@@ -201,7 +199,7 @@ class NodeFunctionCall(Node):
 
 
 class NodeArrayElement(Node):
-    def __init__(self, ids_map_list, *kargs, **kwargs):
+    def __init__(self, ids_map_list):
         Node.__init__(self, ids_map_list)
 
     """

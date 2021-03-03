@@ -53,5 +53,4 @@ def compile_file(input_file, output_file, run, minify_file):
 
 if __name__ == '__main__':
     input_file, output_file, run_file, minify_file = process_args()
-    # input_file = "examples/games/tic_tac_toe.code"
     compile_file(input_file, output_file, run_file, minify_file)

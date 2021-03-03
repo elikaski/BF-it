@@ -13,17 +13,6 @@ global_variables = list()  # Global list of global variables
 functions = dict()  # Global dictionary of function_name --> FunctionCompiler objects
 
 
-class LibraryFunctionCompiler:
-    def __init__(self, name, type, parameters, code):
-        self.name = name
-        self.type = type
-        self.parameters = parameters
-        self.code = code
-
-    def get_code(self, current_stack_pointer):
-        return self.code
-
-
 # General Error classes
 
 
@@ -47,7 +36,7 @@ def get_function_object(name):
     and if we dont work on different copies then we will interfere with the current token pointer etc
 
     for example:
-        int increase(n) { return n+1;}
+        int increase(int n) { return n+1;}
         int main() {int x = increase(increase(1));}
 
     while compiling the first call, we start a compilation of the same function object in the second call
@@ -57,6 +46,7 @@ def get_function_object(name):
 
 def insert_library_functions():
     from Compiler.General import get_readint_code, get_printint_code, get_readchar_code, get_printchar_code
+    from Compiler.FunctionCompiler import LibraryFunctionCompiler
 
     readint = LibraryFunctionCompiler("readint", Token.INT, list(), get_readint_code())
     insert_function_object(readint)
@@ -141,5 +131,4 @@ def create_variable_from_definition(parser, index=None, advance_tokens=False):
     else:
         dimensions = [1]
 
-    variable = create_variable(ID, Token.INT, dimensions)
-    return variable
+    return create_variable(ID, Token.INT, dimensions)
