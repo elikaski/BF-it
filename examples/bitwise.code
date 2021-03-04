@@ -20,12 +20,12 @@ void main() {
 
     print("Shift Assignment: ");
     x = 1;
-    for(int i = 0; i < 7; i++) {
+    for (int i = 0; i < 7; i++) {
         printint(x);
         printchar(' ');
         x <<= 1;
     }
-    for(int i = 0; i < 8; i++) {
+    for (int i = 0; i < 8; i++) {
         printint(x);
         printchar(' ');
         x >>= 1;
@@ -95,7 +95,7 @@ void main() {
     print("Order of Execution Test: ");
     x = 1 | 2 ^ 3 & 5;
 
-    if(x != (1 | (2 ^ (3 & 5)))) {
+    if (x != (1 | (2 ^ (3 & 5)))) {
         print("Not ");
     }
     print("Working\n");

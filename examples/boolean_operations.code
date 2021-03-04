@@ -1,20 +1,19 @@
-int main()
-{
+int main() {
 	// boolean arithmetic
 	bool x;
-	
+
 	// OR ||
 	x = true || false;
 	printint(x == true);
-	
+
 	// AND &&
 	x = true && false;
 	printint(x == false);
-	
+
 	// NOT !
 	x = !true;
 	printint(x == false);
-	
+
 	// order of operations (highest to lowest)
 	// PARENTHESES, NOT, AND, OR
 	x = true || true && false;
@@ -37,5 +36,4 @@ int main()
 	printint(x == true);
 	x = !true || !!true && !false;
 	printint(x == true);
-
 }

@@ -1,7 +1,4 @@
-
-
-void character_trick()
-{
+void character_trick() {
 	printchar(10); // ascii value of \n
 	int myarr[100];
 	myarr['a'] = 42; // 'a' evaluates to a's ascii value = 97
@@ -9,17 +6,13 @@ void character_trick()
 	printchar('\n');
 }
 
-int main()
-{
-
+int main() {
 	// true is evaluated to 1
 	printint(5 * true == 5);
-	
-	
+
 	// false is evaluated to 0
 	printint(3 + false == 3);
-	
-	
+
 	// array overflow
 	int arr[3];
 	int x;
@@ -28,58 +21,53 @@ int main()
 	// the layout in memory is:
 	// ..., arr[0], arr[1], arr[2], x, y, z, ...
 	// so performing something like arr[3] = 5; will overwrite x. arr[4] = 5; will overwrite y. etc
-	
+
 	x = 7;
 	printint(x == 7);
 	arr[3] = 5; // overwrite x
 	printint(x == 5);
-	
+
 	// note that we cannot overwrite "previously defined variables" with this method, because all numbers are evaluated as non-negative
 	arr[1 - 250] = 5; // will overwrite the (256 + 1 - 250 - 3)'s variable defined after the array
-	
+
 	// also note that if we overwrite non-variable stuff in the stack, like arr[7] in this case,
 	// the value we wrote to the stack will be most likely changed because of general "behind the scene" stack related operations
 	arr[7] = 3;
 	printint(arr[7] == 0); // in this case, it is overwritten with 0.
-	
+
 	// additionally, the first element of an array can be accessed without brackets
 	arr = 12;
 	printint(arr[0] == 12);
 	arr[0] = 13;
 	printint(arr == 13);
-	
-	
+
+
 	// boolean evaluation inside if/for/while
 	// similarly to C,
 	// 0 is evaluated to false
 	// everything that is non-zero is evaluated to true
-	
+
 	print("\n");
 	x = 3;
-	while (x)
-	{
+	while (x) {
 		printint(1);
 		x = 0;
 	}
 	x = 3 - 12;
-	if (x)
-	{
+	if (x) {
 		printint(1);
-	}
-	else
-	{
+	} else {
 		printint(0);
 	}
-	for (x = 3; x; x = 0)
-	{
+	for (x = 3; x; x = 0) {
 		printint(1);
 	}
 	print("\n");
-	
+
 	// overflow
 	// note: this is relevant to MY interpreter and not necessarily to others
 	// since it is not a standard in brainfuck, different interpteres might behave differently
-	
+
 	// because the cells in BF are 1-byte (8-bits) in size,
 	// the value of each cell (variable) is limited to the range between 0 and 255 (including)
 	// if a mathematical operations increases or decreases the cell to outside this range,
@@ -90,14 +78,13 @@ int main()
 	printint(255 + 1 == 0);
 	printint(254 + 2 == 0);
 	printint(255 + 2 == 1);
-	
+
 	// as a result, loops like:
-	// for (int i = 5; i >= 0; i--)
-    // {
-    //		print("loop ");
-    // }
+	// for (int i = 5; i >= 0; i--) {
+	//     print("loop ");
+	// }
 	// will result in an infinite loop
 	// because when i=0, and i--; is performed, i becomes 255.
-		
+
 	character_trick();
 }

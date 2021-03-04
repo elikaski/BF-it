@@ -1,31 +1,27 @@
-int main()
-{
+int main() {
 	int i;
-	
+
 	// for loop can be minimal (no initialization and no incrementation)
-	for (; i < 6; )
-	{
+	for (; i < 6; ) {
 		printint(i++);
 		print(" ");
 	}
-	
+
 	print("\n");
 	int j = 5;
-	
+
 	// can modify variables inside for definition
-	for ( ; j++ < 10; )
-	{
+	for ( ; j++ < 10; ) {
 		printint(j);
 		print(" ");
 	}
-	
+
 	print("\n");
-	
+
 	// same for while
 	int x = 3;
-	
-	while (x++ < 8)
-	{
+
+	while (x++ < 8) {
 		printint(x);
 		print(" ");
 	}
