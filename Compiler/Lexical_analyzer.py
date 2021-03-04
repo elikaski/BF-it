@@ -113,8 +113,6 @@ def analyze(text):
     return tokens
 
 
-
-
 def tests():
     def test1():
         # test token priorities: INT should not be confused with ID even if ID contains "int"
@@ -125,7 +123,6 @@ def tests():
                     Token.SEMICOLON, Token.ID, Token.SEMICOLON]
         assert len(res) == len(expected) and all(res[i].type == expected[i] for i in range(len(res)))
 
-
     def test2():
         text = "true !||!false falsek  k||y+-a&&x"
         res = analyze(text)
@@ -133,8 +130,6 @@ def tests():
         expected = [Token.TRUE, Token.NOT, Token.OR, Token.NOT, Token.FALSE, Token.ID, Token.ID, Token.OR, Token.ID,
                     Token.BINOP, Token.BINOP, Token.ID, Token.AND, Token.ID]
         assert len(res) == len(expected) and all(res[i].type == expected[i] for i in range(len(res)))
-
-
 
     # todo find a better way to test?
     test1()

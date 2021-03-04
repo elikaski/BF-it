@@ -326,6 +326,7 @@ class FunctionCompiler:
 
     def literal(self):
         # literal: NUM | CHAR | ID | ID (LBRACK expression RBRACK)+ | TRUE | FALSE | function_call | ( expression )
+
         token = self.parser.current_token()
 
         if token.type == Token.ID and self.parser.next_token().type == Token.LPAREN:
@@ -405,6 +406,7 @@ class FunctionCompiler:
 
     def additive(self):
         # additive: multiplicative ((PLUS|MINUS) multiplicative)*
+
         n = self.multiplicative()
 
         token = self.parser.current_token()
@@ -421,6 +423,7 @@ class FunctionCompiler:
 
     def shift(self):
         # shift: additive (<<|>> additive)*
+
         n = self.additive()
 
         token = self.parser.current_token()
@@ -437,6 +440,7 @@ class FunctionCompiler:
 
     def relational(self):
         # relational: shift (==|!=|<|>|<=|>= shift)?
+
         a = self.shift()
 
         token = self.parser.current_token()
@@ -798,7 +802,7 @@ class FunctionCompiler:
         return code
 
     def compile_for(self):
-        # for (statement expression; expression) { inner_scope_code }
+        # for (statement; expression; expression) { inner_scope_code }
         # (the statement/second expression/inner_scope_code can be empty)
 
         """
@@ -856,7 +860,7 @@ class FunctionCompiler:
         inner_scope_code += self.exit_scope()
         if manually_inserted_variable_in_for_definition:
             inner_scope_code += ">"
-        # ===============================================
+        # ==============================================
 
         code += initial_statement
         code += condition_expression  # evaluate expression
@@ -941,7 +945,6 @@ class FunctionCompiler:
 
         code = ''
         while self.parser.current_token() is not None:
-
             if self.parser.current_token().type == Token.RBRACE:
                 # we reached the end of our scope
                 self.parser.advance_token()  # skip RBRACE
