@@ -99,8 +99,12 @@ def get_set_cell_value_code(new_value, previous_value, zero_next_cell_if_necessa
     # after the code of this function is executed, the pointer will point to the original cell
     # this function returns the shorter code between "naive" and "looped"
 
+    def get_char(value):
+        return "+" if value > 0 else "-"
+
     offset = new_value - previous_value
-    char = "+" if offset > 0 else "-"
+    char = get_char(offset)
+    is_negative = offset < 0
     offset = abs(offset)
 
     # "naive" code is simply +/-, <offset> times
@@ -110,16 +114,25 @@ def get_set_cell_value_code(new_value, previous_value, zero_next_cell_if_necessa
     def get_abc(offset):
         # returns a,b,c such that a*b+c=offset and a+b+c is minimal
 
-        min_a, min_b, min_c = offset, 1, 0
-        min_sum = min_a + min_b + min_c
+        min_a, min_b, min_c = 0, 0, 0
+        min_sum = offset + 1
 
-        for i in range(1, offset // 2 + 1):
-            a, b, c = i, offset // i, offset % i
-            curr_sum = a + b + c
+        left = 1
+        right = offset // 2 - 1
+
+        while right >= left:
+            a, b = left+1, right+1
+            c = offset - a * b
+            curr_sum = abs(a) + abs(b) + abs(c)
 
             if curr_sum < min_sum:
                 min_a, min_b, min_c = a, b, c
                 min_sum = curr_sum
+
+            if a * b > offset:
+                right -= 1
+            else:
+                left += 1
 
         return min_a, min_b, min_c
 
@@ -128,14 +141,14 @@ def get_set_cell_value_code(new_value, previous_value, zero_next_cell_if_necessa
     if zero_next_cell_if_necessary:
         looped += "[-]"  # zero it if necessary
     looped += "+" * a  # set loop counter
-    looped += "[-<" + char * b + ">]"  # sub 1 from counter, perform b actions
+    looped += "[-<" + char * abs(b) + ">]"  # sub 1 from counter, perform b actions
     looped += "<"  # point to "character" cell
-    looped += char * c  # c more actions
+    looped += get_char(-c if is_negative else c) * abs(c)  # c more actions
 
-    if len(naive) < len(looped):
-        return naive
-    else:
+    if len(naive) > len(looped):
         return looped
+    else:
+        return naive
 
 
 def get_move_to_offset_code(offset):
@@ -297,11 +310,7 @@ def get_divmod_code():
         code += "[<+>-]"  # move first cell back to b
         code += ">"  # point to second cell
 
-        code_inside_if = "[-]>[-]++++++[-<+++++++++++>]<+++.>+++++[-<+++++++++>]<..---.+++.>+++++++++[-<--------->]<-" \
-                         ".+++++++++++++.-------------.>++++++[-<++++++>]<.>++++++[-<++++++>]<+.+++++++++++++.-------" \
-                         "------.++++++++++.----------.++++++.-.>++++++[-<------------->]<.>++++++[-<+++++++++++>]<.>" \
-                         "+++[-<+++++++>]<++.>++++++++[-<----------->]<-.>+++++++++[-<++++++++++>]<.>+++[-<------->]<" \
-                         ".+++++++++++++.---.>++++++++++[-<---------->]<-."  # print("Error - Division by zero\n");
+        code_inside_if = get_print_string_code("Error - Division by zero\n")
         code_inside_if += "[]"  # infinite loop
 
         code += get_if_equal_to_0_code(code_inside_if, offset_to_temp_cell=1)
