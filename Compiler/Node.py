@@ -5,6 +5,7 @@ This file holds classes that are used to create the parse tree of expressions
 Each class implements a get_code() function that receives a "stack pointer" and returns code that evaluates the expression
 """
 
+
 class Node:
     def __init__(self, ids_map_list):
         # holds a copy of ids_map_list as it was when we parsed the expression
@@ -88,7 +89,7 @@ class NodeToken(Node):
 
 
 class NodeUnaryPrefix(Node):
-    def __init__(self, ids_map_list, operation, literal, *kargs, **kwargs):
+    def __init__(self, ids_map_list, operation, literal):
         Node.__init__(self, ids_map_list)
         self.token_operation = operation
         self.node_literal = literal
@@ -105,7 +106,6 @@ class NodeUnaryPrefix(Node):
             return code
         else:
             # its INCREMENT or DECREMENT
-
             if isinstance(self.node_literal, NodeArrayGetElement):
                 token_id, index_node = self.node_literal.token_id, self.node_literal.node_expression
                 code = get_move_right_index_cells_code(current_pointer, index_node)
@@ -134,13 +134,12 @@ class NodeUnaryPrefix(Node):
 
 
 class NodeUnaryPostfix(Node):
-    def __init__(self, ids_map_list, operation, literal, *kargs, **kwargs):
+    def __init__(self, ids_map_list, operation, literal):
         Node.__init__(self, ids_map_list)
         self.token_operation = operation
         self.node_literal = literal
 
     def get_code(self, current_pointer, *args, **kwargs):
-
         # its an unary postfix operation (x++)
         assert self.token_operation.type in [Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE]
 
@@ -200,7 +199,7 @@ class NodeFunctionCall(Node):
 
 
 class NodeArrayElement(Node):
-    def __init__(self, ids_map_list, *kargs, **kwargs):
+    def __init__(self, ids_map_list):
         Node.__init__(self, ids_map_list)
 
     """
@@ -320,4 +319,3 @@ class NodeArraySetElement(NodeArrayElement):
         # now value is at the desired cell, and we point to the next available cell
 
         return code
-

@@ -67,8 +67,8 @@ def get_printint_code():
     # ==============================================================================================
     # code to print num (taken from https://esolangs.org/wiki/brainfuck_algorithms#Print_value_of_cell_x_as_number_.288-bit.29)
     code += ">>++++++++++<<[->+>-[>+>>]>[+[-<+>]>+>>]<<<<<<]>>[-]>>>++++++++++<[->-[>+>>]>[+[-"
-    code += "<+>]>+>>]<<<<<]>[-]>>[>++++++[-<++++++++>]<.<<+>+>[-]]<[<[->-<]++++++[->++++++++"
-    code += "<]>.[-]]<<++++++[-<++++++++>]<.[-]<<[-<+>]<"
+    code += "<+>]>+>>]<<<<<]>[-]>>[>++++++[-<++++++++>]<.<<+>+>[-]]<[<[->-<]++++++[->++++++++<"
+    code += "]>.[-]]<<++++++[-<++++++++>]<.[-]<<[-<+>]<"
     # todo either document this or write one of my own
     # ==============================================================================================
 
@@ -139,8 +139,8 @@ def get_set_cell_value_code(new_value, previous_value, zero_next_cell_if_necessa
 
 
 def get_move_to_offset_code(offset):
-    #  returns code that moves value from current pointer to cell at offset <offset> to the left
-    #  after this, the pointer points to the original cell, which is now the next available cell
+    # returns code that moves value from current pointer to cell at offset <offset> to the left
+    # after this, the pointer points to the original cell, which is now the next available cell
 
     code = "<" * offset  # point to destination
     code += "[-]"  # zero destination
@@ -152,8 +152,8 @@ def get_move_to_offset_code(offset):
 
 
 def get_copy_to_offset_code(offset):
-    #  returns code that copies value from current pointer to cell at offset <offset> to the left
-    #  after this, the pointer points to the original cell, which remains unchanged
+    # returns code that copies value from current pointer to cell at offset <offset> to the left
+    # after this, the pointer points to the original cell, which remains unchanged
 
     code = ">"  # point to temp
     code += "[-]"  # zero temp
@@ -177,15 +177,15 @@ def get_copy_to_variable_code(ids_map_list, ID_token, current_pointer):
 
 
 def get_move_to_return_value_cell_code(return_value_cell, current_stack_pointer):
-    #  returns code that moves value from current pointer to return_value cell
-    #  after this, the pointer points to the original cell, which is now the next available cell
+    # returns code that moves value from current pointer to return_value cell
+    # after this, the pointer points to the original cell, which is now the next available cell
 
     # we need to move it <current_stack_pointer - return_value_cell> cells left
     return get_move_to_offset_code(current_stack_pointer - return_value_cell)
 
 
 def get_copy_from_variable_code(ids_map_list, ID_token, current_pointer):
-    #  returns code that copies value from cell of variable ID to current pointer, and then sets the pointer to the next cell
+    # returns code that copies value from cell of variable ID to current pointer, and then sets the pointer to the next cell
 
     offset = get_offset_to_variable(ids_map_list, ID_token, current_pointer)
     code = "[-]"  # res = 0
@@ -297,11 +297,11 @@ def get_divmod_code():
         code += "[<+>-]"  # move first cell back to b
         code += ">"  # point to second cell
 
-        code_inside_if = "[-]>[-]<>++++++[-<+++++++++++>]<+++.>+++++[-<+++++++++>]<..---.+++.>+++++++++[-<--------->]" \
-                         "<-.+++++++++++++.-------------.>++++++[-<++++++>]<.>++++++[-<++++++>]<+.+++++++++++++.-----" \
-                         "--------.++++++++++.----------.++++++.-.>++++++[-<------------->]<.>++++++[-<+++++++++++>]<" \
-                         ".>+++[-<+++++++>]<++.>++++++++[-<----------->]<-.>+++++++++[-<++++++++++>]<.>+++[-<------->" \
-                         "]<.+++++++++++++.---.>++++++++++[-<---------->]<-."  # print("Error - Division by zero\n");
+        code_inside_if = "[-]>[-]++++++[-<+++++++++++>]<+++.>+++++[-<+++++++++>]<..---.+++.>+++++++++[-<--------->]<-" \
+                         ".+++++++++++++.-------------.>++++++[-<++++++>]<.>++++++[-<++++++>]<+.+++++++++++++.-------" \
+                         "------.++++++++++.----------.++++++.-.>++++++[-<------------->]<.>++++++[-<+++++++++++>]<.>" \
+                         "+++[-<+++++++>]<++.>++++++++[-<----------->]<-.>+++++++++[-<++++++++++>]<.>+++[-<------->]<" \
+                         ".+++++++++++++.---.>++++++++++[-<---------->]<-."  # print("Error - Division by zero\n");
         code_inside_if += "[]"  # infinite loop
 
         code += get_if_equal_to_0_code(code_inside_if, offset_to_temp_cell=1)
@@ -350,14 +350,10 @@ def get_divmod_code():
             b = w
             w = 0
 
-
-
-
     at the end:
     w = a%b
     x = a/b
     b = b-a%b
-
     """
 
     return code
@@ -428,7 +424,7 @@ def get_bitwise_code(code_logic):
     code += ">>"  # point to z
     code += code_logic  # pointer ends at bit1, z and bit1 should be 0 after code
 
-    code += ">[<+<+>>-]<[>+<-]" # copy bit to z (using bit1)
+    code += ">[<+<+>>-]<[>+<-]"  # copy bit to z (using bit1)
 
     # y = y << z
     code += "<"
@@ -449,7 +445,6 @@ def get_bitwise_code(code_logic):
 
     code += ">[<<<<<<<<<+>>>>>>>>>-]"  # move res to a
     code += "<<<<<<<<"  # point to b
-
 
     return code
 
@@ -486,11 +481,9 @@ def get_unary_prefix_op_code(token, offset_to_variable=None):
         code = "[-]"  # res = 0
         code += ">[-]"  # temp (next pointer) = 0
         code += "<" * (offset + 1)  # point to destination cell
+        code += "+"  # increase destination by 1
         code += "[" + ">" * offset + "+>+" + "<" * (offset + 1) + "-]"  # increase res and temp, zero destination
-        code += ">" * offset  # point to res
-        code += "+"  # increase res by 1
-        code += ">"  # point to temp
-        code += "+"  # increase temp by 1
+        code += ">" * (offset + 1)  # point to temp
         code += "[" + "<" * (offset + 1) + "+" + ">" * (offset + 1) + "-]"  # copy temp back to destination
         # at this point we point to the next available cell, which is temp, which is now zero
 
@@ -504,11 +497,9 @@ def get_unary_prefix_op_code(token, offset_to_variable=None):
         code = "[-]"  # res = 0
         code += ">[-]"  # temp (next pointer) = 0
         code += "<" * (offset + 1)  # point to destination cell
+        code += "-"  # decrease destination by 1
         code += "[" + ">" * offset + "+>+" + "<" * (offset + 1) + "-]"  # increase res and temp, zero destination
-        code += ">" * offset  # point to res
-        code += "-"  # decrease res by 1
-        code += ">"  # point to temp
-        code += "-"  # decrease temp by 1
+        code += ">" * (offset + 1)  # point to temp
         code += "[" + "<" * (offset + 1) + "+" + ">" * (offset + 1) + "-]"  # copy temp back to destination
         # at this point we point to the next available cell, which is temp, which is now zero
 
@@ -528,7 +519,12 @@ def get_unary_prefix_op_code(token, offset_to_variable=None):
         if token.data in ["**", "//"]:
             code += ">"  # point to temp (x**, x// keep x the same)
         elif token.data == "%%":
-            code += "[-]>[-]"  # put 0 in res and temp, and point to temp
+            code = "[-]"  # res = 0
+            code += ">[-]<"  # temp (next pointer) = 0
+            code += "<" * offset  # point to destination cell
+            code += "[-]"  # zero destination
+            code += ">" * offset  # point to res
+            return code  # returns a optimized version since we can zero the destination
         else:
             raise BFSyntaxError("Unexpected unary prefix %s" % str(token))
 
@@ -595,9 +591,10 @@ def get_unary_postfix_op_code(token, offset_to_variable):
         code += ">" * (offset + 1)  # point to temp
 
         if token.data in ["**", "//"]:
-            pass  # x**,x// keeps x the same
+            pass  # x**, x// keeps x the same
         elif token.data == "%%":
             code += "[-]"  # x%% modifies x to 0
+            return code  # returns because the temp is 0 which makes the loop after not run
         else:
             raise BFSyntaxError("Unexpected unary postfix %s" % str(token))
 
@@ -620,33 +617,34 @@ def get_op_between_literals_code(op_token):
 
     op = op_token.data
     if op == "+" or op == "-":
-        res = ">[<" + op + ">-]"  # increase/decrease first operand and decrease second operand
+        code = ">[<" + op + ">-]"  # increase/decrease first operand and decrease second operand
         # the pointer points to the next available cell, which is the second operand, which is 0
 
-        return res
+        return code
 
     elif op == "*":
         # a, b, temp1, temp2
-        res = ">>[-]>[-]"  # put 0 into temp1, temp2
-        res += "<<<"  # point to first operand
-        res += "[>>>+<<<-]"  # move first operand to temp2
-        res += ">>>"  # point to temp2
+        code = ">>[-]"  # temp1 = 0
+        code += ">[-]"  # temp2 = 0
+        code += "<<<"  # point to first operand
+        code += "[>>>+<<<-]"  # move first operand to temp2
+        code += ">>>"  # point to temp2
 
         # do in a loop: as long as temp2 != 0
-        res += "["
+        code += "["
 
-        res += "<<"  # point to second operand
-        res += "[<+>>+<-]"  # add it to first operand and temp1
-        res += ">"  # point to temp1
-        res += "[<+>-]"  # move it to second operand
+        code += "<<"  # point to second operand
+        code += "[<+>>+<-]"  # add it to first operand and temp1
+        code += ">"  # point to temp1
+        code += "[<+>-]"  # move it to second operand
 
         # end loop
-        res += ">"  # point back to temp2
-        res += "-"  # decrease temp2
-        res += "]"
+        code += ">"  # point back to temp2
+        code += "-"  # decrease temp2
+        code += "]"
 
-        res += "<<"  # point back to next available cell (second operand)
-        return res
+        code += "<<"  # point back to next available cell (second operand)
+        return code
 
     elif op == "/":
         code = get_divmod_code()
@@ -667,25 +665,25 @@ def get_op_between_literals_code(op_token):
     # relops
     elif op == "==":
         # a, b
-        res = "[->-<]"  # a = 0, b = b - a
-        res += "+"  # a = 1. will hold the result. if a!=b, this is unchanged
-        res += ">"  # point to b
-        res += "["  # if b == 0, enter the following code
-        res += "<->[-]"  # a = 0, b=0
-        res += "]"  # end of "loop"
+        code = "[->-<]"  # a = 0, b = b - a
+        code += "+"  # a = 1. will hold the result. if a!=b, this is unchanged
+        code += ">"  # point to b
+        code += "["  # if b == 0, enter the following code
+        code += "<->[-]"  # a = 0, b=0
+        code += "]"  # end of "loop"
 
-        return res
+        return code
 
     elif op == "!=":
         # a, b
-        res = "[->-<]"  # a = 0, b = b - a
-        # a will hold the result. if a!=b, this is unchanged
-        res += ">"  # point to b
-        res += "["  # if b == 0, enter the following code
-        res += "<+>[-]"  # a = 1, b=0
-        res += "]"  # end of "loop"
+        code = "[->-<]"  # a = 0, b = b - a
+        # a will hold the result. if a != b, this is unchanged
+        code += ">"  # point to b
+        code += "["  # if b == 0, enter the following code
+        code += "<+>[-]"  # a = 1, b=0
+        code += "]"  # end of "loop"
 
-        return res
+        return code
 
     elif op == ">":
         # a, b, c, d
@@ -720,7 +718,6 @@ def get_op_between_literals_code(op_token):
 
         """
         x > y?
-
 
         res = 0
         while x != 0:
@@ -817,7 +814,6 @@ def get_op_between_literals_code(op_token):
         """
         x <= y?
 
-
         res = 1
         while x != 0:
             res = 0
@@ -867,7 +863,6 @@ def get_op_between_literals_code(op_token):
 
         """
         x >= y?
-
 
         res = 1
         while y != 0:
@@ -947,48 +942,48 @@ def get_op_between_literals_code(op_token):
         code = ">>[-]"  # zero temp
         code += "<"  # point to b
 
-        code += "[" # while b != 0
-        code += "<" # point to a
-        code += "[>>+<<-]" # copy a to temp
-        code += ">>" # point to temp
-        code += "[<<++>>-]" # multiply temp by 2 and store result in a
-        code += "<-" # point to b and b -= 1
-        code += "]" # end while
+        code += "["  # while b != 0
+        code += "<"  # point to a
+        code += "[>>+<<-]"  # copy a to temp
+        code += ">>"  # point to temp
+        code += "[<<++>>-]"  # multiply temp by 2 and store result in a
+        code += "<-"  # point to b and b -= 1
+        code += "]"  # end while
 
         return code
 
     elif op == ">>":
         # a, b, c, x, y, z
 
-        code = ">" # point to b
-        code += ">[-]" * 4 # clear 4 cells
-        code += "<" * 4 # point to b
+        code = ">"  # point to b
+        code += ">[-]" * 4  # clear 4 cells
+        code += "<" * 4  # point to b
 
-        code += "[" # while b != 0
-        code += ">++" # set c to 2
-        code += "<<" # point to a
+        code += "["  # while b != 0
+        code += ">++"  # set c to 2
+        code += "<<"  # point to a
 
-        code += "[" # while a != 0
-        code += "-" # a -= 1
-        code += ">>-" # c -= 1
-        code += "[>>+>+<<<-]>>>[<<<+>>>-]" # copy c to y (via z)
-        code += "<" # point to y
+        code += "["  # while a != 0
+        code += "-"  # a -= 1
+        code += ">>-"  # c -= 1
+        code += "[>>+>+<<<-]>>>[<<<+>>>-]"  # copy c to y (via z)
+        code += "<"  # point to y
 
-        code += "-[" # if y == 0
-        code += "<+" # x += 1
-        code += "<++" # set c to 2
+        code += "-["  # if y == 0
+        code += "<+"  # x += 1
+        code += "<++"  # set c to 2
         code += ">>"
-        code += "+" # zero y
-        code += "]" # end if
+        code += "+"  # zero y
+        code += "]"  # end if
 
-        code += "<<<<" # point to a
-        code += "]" # end while
+        code += "<<<<"  # point to a
+        code += "]"  # end while
 
-        code += ">>>" # point to x
-        code += "[<<<+>>>-]" # move x to a
-        code += "<[-]" # zero c
-        code += "<-" # b -= 1
-        code += "]" # end while
+        code += ">>>"  # point to x
+        code += "[<<<+>>>-]"  # move x to a
+        code += "<[-]"  # zero c
+        code += "<-"  # b -= 1
+        code += "]"  # end while
 
         return code
 
@@ -1040,9 +1035,8 @@ def get_move_right_index_cells_code(current_pointer, node_index):
 
     code += "["  # while index != 0
     code += ">>"  # point to new_counter (one after current counter)
-    code += "[-]"  # zero new_counter
+    code += "[-]+"  # zero new_counter then add 1 to the new_counter
     code += "<"  # move to old counter
-    code += "+"  # add 1 to counter
     code += "[>+<-]"  # move old counter to new counter
     code += "<"  # point to old index
     code += "-"  # sub 1 from old index

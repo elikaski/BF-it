@@ -36,7 +36,7 @@ def get_function_object(name):
     and if we dont work on different copies then we will interfere with the current token pointer etc
 
     for example:
-        int increase(n) { return n+1;}
+        int increase(int n) { return n+1;}
         int main() {int x = increase(increase(1));}
 
     while compiling the first call, we start a compilation of the same function object in the second call
@@ -89,7 +89,7 @@ def create_variable(name, type, dimensions):
     variable = namedtuple("variable", ["name", "type", "size", "cell_index"])
 
     variable.name = name
-    variable. type = type
+    variable.type = type
     variable.dimensions = dimensions  # list of array dimensions sizes (for non-arrays it will be [1])
     variable.cell_index = None  # will be updated when we insert this variable into an ids map
 
@@ -98,7 +98,7 @@ def create_variable(name, type, dimensions):
 
 def get_variable_size(variable):
     # return total variable size
-    return reduce(lambda x,y: x*y, variable.dimensions)
+    return reduce(lambda x, y: x*y, variable.dimensions)
 
 
 def create_variable_from_definition(parser, index=None, advance_tokens=False):
@@ -115,7 +115,6 @@ def create_variable_from_definition(parser, index=None, advance_tokens=False):
 
     parser.check_next_tokens_are([Token.ID], starting_index=index)
     ID = parser.tokens[index + 1].data
-    type = Token.INT
 
     if advance_tokens:
         parser.advance_token(amount=2)  # skip INT ID
@@ -132,5 +131,4 @@ def create_variable_from_definition(parser, index=None, advance_tokens=False):
     else:
         dimensions = [1]
 
-    variable = create_variable(ID, type, dimensions)
-    return variable
+    return create_variable(ID, Token.INT, dimensions)

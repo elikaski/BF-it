@@ -12,7 +12,6 @@ And finally return the code of the main function
 
 
 class Compiler:
-
     def __init__(self, code):
         self.parser = Parser(analyze(code))
 
