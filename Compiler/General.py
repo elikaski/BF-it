@@ -235,13 +235,17 @@ def get_token_code(ids_map_list, token, current_pointer):
     raise NotImplementedError
 
 
-def get_divmod_code():
+def get_divmod_code(right_token=None):
     # given that the current pointer points to a, and the cell after a contains b,
     # (i.e the cells look like: --> a, b, ?, ?, ?, ?, ...)
     # returns a code that calculates divmod, and the cells look like this:
     # --> 0, b-a%b, a%b, a/b, 0, 0
     # and the pointer points to the first 0 (which is in the same cell as a used to be)
     ADD_DIVISION_BY_ZERO_CHECK = True
+
+    if right_token is not None and right_token.type == Token.NUM:
+        if right_token.data != 0:
+            ADD_DIVISION_BY_ZERO_CHECK = False
 
     def get_if_equal_to_0_code(inside_if_code, offset_to_temp_cell):
         """
@@ -606,7 +610,7 @@ def get_unary_postfix_op_code(token, offset_to_variable):
     raise NotImplementedError
 
 
-def get_op_between_literals_code(op_token):
+def get_op_between_literals_code(op_token, left_token=None, right_token=None):
     # returns code that:
     # performs op on 2 operands
     # the first operand is at current pointer, and the second operand is at current pointer + 1
@@ -647,7 +651,7 @@ def get_op_between_literals_code(op_token):
         return code
 
     elif op == "/":
-        code = get_divmod_code()
+        code = get_divmod_code(right_token)
         code += ">>>"  # point to a/b
         code += "[<<<+>>>-]"  # copy a/b to current cell
         code += "<<"  # point to next available cell
@@ -655,7 +659,7 @@ def get_op_between_literals_code(op_token):
         return code
 
     elif op == "%":
-        code = get_divmod_code()
+        code = get_divmod_code(right_token)
         code += ">>"  # point to a%b
         code += "[<<+>>-]"  # copy a%b to current cell
         code += "<"  # point to next available cell
