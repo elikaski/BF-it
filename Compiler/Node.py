@@ -55,7 +55,7 @@ class NodeToken(Node):
             code += self.right.get_code(current_pointer + 1)
             code += "<<"  # point to the first operand
 
-            code += get_op_between_literals_code(self.token, left_token=self.left.token, right_token=self.right.token)
+            code += get_op_between_literals_code(self.token, right_token=self.right.token)
             return code
 
         elif self.token.type == Token.ASSIGN:

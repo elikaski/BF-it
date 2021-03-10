@@ -244,8 +244,10 @@ def get_divmod_code(right_token=None):
     ADD_DIVISION_BY_ZERO_CHECK = True
 
     if right_token is not None and right_token.type == Token.NUM:
-        if right_token.data != 0:
-            ADD_DIVISION_BY_ZERO_CHECK = False
+        if get_NUM_token_value(right_token) == 0:
+            raise BFSemanticError("Dividing by Zero, at %s" % right_token)
+
+        ADD_DIVISION_BY_ZERO_CHECK = False
 
     def get_if_equal_to_0_code(inside_if_code, offset_to_temp_cell):
         """
@@ -610,7 +612,7 @@ def get_unary_postfix_op_code(token, offset_to_variable):
     raise NotImplementedError
 
 
-def get_op_between_literals_code(op_token, left_token=None, right_token=None):
+def get_op_between_literals_code(op_token, right_token=None):
     # returns code that:
     # performs op on 2 operands
     # the first operand is at current pointer, and the second operand is at current pointer + 1
