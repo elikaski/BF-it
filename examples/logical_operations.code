@@ -1,24 +1,23 @@
-int main()
-{
+int main() {
 	// support for ==, !=, <, >, <=, >=
 	int x;
-	
+
 	x = 5 == 5;
 	printint(x == true);
 	x = 5 == 6;
 	printint(x == false);
-	
+
 	x = 5 < 6;
 	printint(x == true);
 	x = 5 < 5;
 	printint(x == false);
 	x = 5 < 4;
 	printint(x == false);
-	
+
 	x = 5 <= 5;
 	printint(x == true);
 	x = 5 != 6;
 	printint(x == true);
 	x = 5 != 5;
-	printint(x == false);   
+	printint(x == false);
 }

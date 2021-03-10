@@ -22,14 +22,11 @@ void print_global_arr() {
     }
 }
 
-
-
 int global_x;
 int global_y = 123; // initialization at the beginning of the program
 int global_arr[10];
 int some_variable;
 void main() {
-
     global_x = 5; // write to global variable
     increase_global_x(3); // will modify global variable
     printint(global_x == 8);
@@ -58,4 +55,3 @@ void main() {
     // our global value is unchanged
     printint(some_variable == 123);
 }
-

@@ -1,20 +1,15 @@
-int main()
-{
+int main() {
 	// there is no short-circuit boolean evaluation
 	int x = 5;
 	printint(x == 5);
-	
-	if (true || x++) // x++ is evaluated even though it is not necessary for the boolean result
-	{
-	}
+
+	if (true || x++) {} // x++ is evaluated even though it is not necessary for the boolean result
 	printint(x == 6);
-	
-	if (false && x++) // again x++ is evaluated
-	{
-	}
+
+	if (false && x++) {} // again x++ is evaluated
 	printint(x == 7);
-	
-	
+
+
 	// order of evaluation
 	// expressions are evaluated left-to-right 
 	// in the following example, the left "x++" is evaluated first.
@@ -25,8 +20,8 @@ int main()
 	int y = x++ + x++;
 	printint(y == 7);
 	printint(x == 5);
-	
-	
+
+
 	// in the following example, the order is:
 	// the first "x++" returns 2 and x becomes 3
 	// the second "x++" returns 3 and x becomes 4
@@ -37,8 +32,8 @@ int main()
 	y = x++ + x++ * x++;
 	printint(y == 14);
 	printint(x == 5);
-	
-	
+
+
 	// it works similarly with assignments (=, +=, *=, etc)
 	// (x = 2) is evaluated to 2, and modifies x to becomes 2
 	// x++ returns 2 and modifies x to become 3
@@ -48,13 +43,12 @@ int main()
 	y = (x = 2) + x++ * x;
 	printint(x == 3);
 	printint(y == 8);
-	
-	
+
+
 	// first operand is evaluated to 6, and x becomes 6
 	// second operand is evaluated to 5, and x becomes 5
 	x = 3;
 	y = (x *= 2) + --x;
 	printint(x == 5);
 	printint(y == 11);
-
 }

@@ -1,63 +1,49 @@
+int get_first_number() {
+    print("Please enter the first number: ");
+    int num = readint();
+    return num;
+}
 
-    int get_first_number()
-    {
-        print("Please enter the first number: ");
-        int num = readint();
-        return num;
-    }
-    
-    int get_second_number()
-    {
-        print("Please enter the second number: ");
-        int num = readint();
-        return num;
-    }
+int get_second_number() {
+    print("Please enter the second number: ");
+    int num = readint();
+    return num;
+}
 
-    int get_operation()
-    {
-        print("Please enter operation:\n");
-        print("1 - ADD\n");
-        print("2 - SUB\n");
-        print("3 - MUL\n");
-        print("4 - DIV\n");
-        print("5 - MOD\n");
-        
-        int op = readint();
-        return op;
-    }
-    
-    int get_result(int a, int b, int op)
-    {
-        int res;
-        if (op == 1)
-        { res = a + b; }
-        if (op == 2)
-        { res = a - b; }
-        if (op == 3)
-        { res = a * b; }
-        if (op == 4)
-        { res = a / b; }
-        if (op == 5)
-        { res = a % b; }
-        
-        return res;
-    }
-    
+int get_operation() {
+    print("Please enter operation:\n");
+    print("1 - ADD\n");
+    print("2 - SUB\n");
+    print("3 - MUL\n");
+    print("4 - DIV\n");
+    print("5 - MOD\n");
 
-    int main()
-    {
-        while (true)
-        {
-            print("==============================================\n");
-            int a = get_first_number();
-            int b = get_second_number();
-            int op = get_operation();
-            int res = get_result(a, b, op);
+    int op = readint();
+    return op;
+}
 
-            
-            print("Result is: ");
-            printint(res);
-            print("\n");
-            print("==============================================\n");
-        }
+int get_result(int a, int b, int op) {
+    int res;
+    if (op == 1) { res = a + b; }
+    if (op == 2) { res = a - b; }
+    if (op == 3) { res = a * b; }
+    if (op == 4) { res = a / b; }
+    if (op == 5) { res = a % b; }
+
+    return res;
+}
+
+int main() {
+    while (true) {
+        print("==============================================\n");
+        int a = get_first_number();
+        int b = get_second_number();
+        int op = get_operation();
+        int res = get_result(a, b, op);
+
+        print("Result is: ");
+        printint(res);
+        print("\n");
+        print("==============================================\n");
     }
+}

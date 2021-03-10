@@ -15,7 +15,6 @@ char read_one_char() {
     return res;
 }
 
-
 bool ask_play_again() {
     bool input_valid = false;
     bool result;
@@ -37,7 +36,11 @@ bool ask_play_again() {
 void print_board() {
     for (int i = 0; i < 9; i++) {
         printchar(board[i]);
-        if (i % 3 == 2) {print("\n---------\n");} else {print(" | ");}
+        if (i % 3 == 2) {
+            print("\n---------\n");
+        } else {
+            print(" | ");
+        }
     }
 }
 
@@ -46,7 +49,6 @@ void init_board() {
         board[i] = ' ';
     }
 }
-
 
 char check_win_or_tie() {
     char winner = ' ';
@@ -73,17 +75,19 @@ int get_next_move(bool player_X_turn) {
     int move = 0;
     while (move < 1 || move > 9 || board[move-1] != ' ') { // humans count from 1 :)
         print("Player ");
-        if (player_X_turn) {printchar('X');} else {printchar('O');}
+        if (player_X_turn) {
+            printchar('X');
+        } else {
+            printchar('O');
+        }
         print(" turn:\n");
         move = readint();
     }
     return move;
 }
 
-
 char board[3][3];
 int main() {
-
     bool still_playing = true;
 
     while (still_playing) {
@@ -96,7 +100,11 @@ int main() {
 
         while (!game_over) {
             int move = get_next_move(player_X_turn);
-            if (player_X_turn) {board[move-1]='X';} else {board[move-1]='O';}
+            if (player_X_turn) {
+                board[move-1]='X';
+            } else {
+                board[move-1]='O';
+            }
             move = 0;
             player_X_turn = !player_X_turn;
             moves_so_far++;

@@ -2,7 +2,7 @@ char read_one_char() {
     // take the first char and ignore anything else, until reaching newline
     char res = readchar();
     if(res - '\n') { // If res is a newline then return newline
-        while (readchar() - '\n') {}
+        while(readchar() - '\n') {}
     }
     return res;
 }

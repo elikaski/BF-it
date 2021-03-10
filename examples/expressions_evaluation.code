@@ -1,10 +1,7 @@
-
 // examples of usage of assignment (=, +=, -=, *=, /=, %=)
 // and unary operations (++, --, **, %%, !)
 
-int main()
- {
- 
+int main() {
 	// basic assignment
 	int x = 27;
 	printint(x == 27);
@@ -13,12 +10,12 @@ int main()
 	x = 27;
 	x += 10;
 	printint(x == 37);
-   
+
 	// -= assignment
 	x = 27;
 	x -= 10;
 	printint(x == 17);
-	
+
 	// *= assignment
 	x = 13;
 	x *= 3;
@@ -35,7 +32,7 @@ int main()
 	printint(x == 7);
 
 	// assignment evaluates to assigned value
-	// x = 3 is evaluated to 3        
+	// x = 3 is evaluated to 3
 	int y = x = 3;
 	printint(x == 3);
 	printint(y == 3);
@@ -60,7 +57,7 @@ int main()
 	printint(x == 3);
 	printint(y == 7);
 	printint(z == 6);
-	
+
 	// support for unary operations ++, --, **, %%
 	x = 10;
 	x++; // increment x by 1
@@ -71,7 +68,7 @@ int main()
 	printint(x == 10);
 	x%%; // set x to become x modulo 1
 	printint(x == 0);
-	
+
 	// unary postfix ++
 	// in the expression "x++", x becomes 6 but evaluates to 5
 	// you can look at it as "give me the value of x as it is now, and then increment x by 1"
@@ -81,7 +78,7 @@ int main()
 	y = x++;
 	printint(x == 6);
 	printint(y == 5);
-	
+
 	// unary prefix ++
 	// in the expression "++x", x becomes 6 and evaluates to 6
 	// you can look at it as "increment x by 1, and then give me x"
@@ -98,13 +95,13 @@ int main()
 	y = x--;
 	printint(x == 4);
 	printint(y == 5);
-	
+
 	// unary prefix --
 	x = 5;
 	y = --x;
 	printint(x == 4);
 	printint(y == 4);
-	
+
 	// unary multiplicatives ** and %%
 	// similarly to ++ and -- which incremenet and decrement by 1, respectively
 	// ** multiplies by 1
@@ -126,16 +123,14 @@ int main()
 	y = %%x;
 	printint(x == 0);
 	printint(y == 0);
-	
+
 	// prefix ! (<not>)
 	// unlike the arithmetic unary operations, <not> does not modify the value of the variable
 	bool t = true;
 	y = !t;
 	printint(t == true);
 	printint(y == false);
-	
+
 	// additionally, it can be used on literals as well
 	printint(!true == false);
-	
-	
-	}
+}
