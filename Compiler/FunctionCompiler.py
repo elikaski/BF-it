@@ -802,7 +802,7 @@ class FunctionCompiler:
         return code
 
     def compile_for(self):
-        # for (statement; expression; expression) { inner_scope_code }
+        # for (statement expression; expression) { inner_scope_code }          note: statement contains ;
         # (the statement/second expression/inner_scope_code can be empty)
 
         """

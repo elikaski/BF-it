@@ -510,28 +510,30 @@ def get_unary_prefix_op_code(token, offset_to_variable=None):
         assert offset_to_variable is not None
         offset = offset_to_variable
 
-        code = "[-]"  # res = 0
-        code += ">[-]"  # temp (next pointer) = 0
-        code += "<" * (offset + 1)  # point to destination cell
-        code += "[" + ">" * offset + "+>+" + "<" * (offset + 1) + "-]"  # increase res and temp, zero destination
-        code += ">" * offset  # point to res
-
         if token.data in ["**", "//"]:
-            code += ">"  # point to temp (x**, x// keep x the same)
+            code = "[-]"  # res = 0
+            code += ">[-]"  # temp (next pointer) = 0
+            code += "<" * (offset + 1)  # point to destination cell
+            code += "[" + ">" * offset + "+>+" + "<" * (offset + 1) + "-]"  # increase res and temp, zero destination
+            code += ">" * offset  # point to res
+            code += ">"  # point to temp (**x, //x keep x the same)
+            code += "[" + "<" * (offset + 1) + "+" + ">" * (offset + 1) + "-]"  # copy temp back to destination
+            # at this point we point to the next available cell
+
+            return code
+
         elif token.data == "%%":
             code = "[-]"  # res = 0
-            code += ">[-]<"  # temp (next pointer) = 0
             code += "<" * offset  # point to destination cell
             code += "[-]"  # zero destination
             code += ">" * offset  # point to res
-            return code  # returns a optimized version since we can zero the destination
+            code += ">"  # point the next available cell
+            # at this point we point to the next available cell
+
+            return code
+
         else:
             raise BFSyntaxError("Unexpected unary prefix %s" % str(token))
-
-        code += "[" + "<" * (offset + 1) + "+" + ">" * (offset + 1) + "-]"  # copy temp back to destination
-        # at this point we point to the next available cell, which is temp, which is now zero
-
-        return code
 
     elif token.type == Token.BITWISE_NOT:
         # a temp
@@ -593,8 +595,8 @@ def get_unary_postfix_op_code(token, offset_to_variable):
         if token.data in ["**", "//"]:
             pass  # x**, x// keeps x the same
         elif token.data == "%%":
-            code += "[-]"  # x%% modifies x to 0
-            return code  # returns because the temp is 0 which makes the loop after not run
+            # at this point we zeroed x and we point to temp (next available cell)
+            return code  # no need to copy anything back to destination - x%% modifies x to 0
         else:
             raise BFSyntaxError("Unexpected unary postfix %s" % str(token))
 
@@ -1037,7 +1039,7 @@ def get_move_right_index_cells_code(current_pointer, node_index):
     code += ">>"  # point to new_counter (one after current counter)
     code += "[-]+"  # zero new_counter then add 1 to the new_counter
     code += "<"  # move to old counter
-    code += "[>+<-]"  # move old counter to new counter
+    code += "[>+<-]"  # add old counter to new counter
     code += "<"  # point to old index
     code += "-"  # sub 1 from old index
     code += "[>+<-]"  # move old index to new index
