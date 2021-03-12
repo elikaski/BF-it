@@ -576,6 +576,7 @@ class FunctionCompiler:
         # parses mathematical expressions (+-*/ ())
         # increments/decrements (++, --)
         # relative operations (==, !=, <, >, <=, >=)
+        # bitwise operations (|, &, ^, ~)
         # logical operations (!, &&, ||, ~)
         # assignment (=, +=, -=, *=, /=, %=, <<=, >>=, &=, |=, ^=)
         # this is implemented using a Node class that represents a parse tree
@@ -589,6 +590,7 @@ class FunctionCompiler:
             bitwise_or (|)
             bitwise_xor (^)
             bitwise_and (&)
+            bitwise_not (~)
             relational (==|!=|<|>|<=|>=)
             shift (<<|>>)
             additive (+-)
@@ -804,6 +806,7 @@ class FunctionCompiler:
     def compile_for(self):
         # for (statement expression; expression) { inner_scope_code }          note: statement contains ;
         # (the statement/second expression/inner_scope_code can be empty)
+        # (the statement cannot contain scope - { and } )
 
         """
             <for> is a special case of scope
@@ -836,6 +839,8 @@ class FunctionCompiler:
             manually_inserted_variable_in_for_definition = True
             code += ">" * get_variable_size(variable)
 
+        if self.parser.current_token().type == Token.LBRACE:  # statement is a scope
+            raise BFSemanticError("Unexpected scope inside for loop statement - %s" % self.parser.current_token())
         initial_statement = self.compile_statement()
 
         condition_expression = self.compile_expression()
