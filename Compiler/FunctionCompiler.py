@@ -748,7 +748,7 @@ class FunctionCompiler:
         code += "["  # if it is non-zero
         code += ">"  # point to execute_else
         if have_else:
-                code += "-"  # execute_else = 0
+            code += "-"  # execute_else = 0
         code += ">"  # point to next available cell
         code += inside_if_code  # after this we point to the same cell (one after execute_else)
         code += "<<"  # point to expression
@@ -826,7 +826,7 @@ class FunctionCompiler:
             code += ">" * get_variable_size(variable)
 
         if self.parser.current_token().type == Token.LBRACE:  # statement is a scope
-            raise BFSemanticError("Unexpected scope inside for loop statement - %s" % self.parser.current_token())
+            raise BFSyntaxError("Unexpected scope inside for loop statement - %s" % self.parser.current_token())
         initial_statement = self.compile_statement()
 
         condition_expression = self.compile_expression()
@@ -891,8 +891,10 @@ class FunctionCompiler:
                 self.parser.advance_token(1)  # skip SEMICOLON
                 return ''  # no code is generated here. code was generated for defining this variable when we entered the scope
 
-            else:
+            elif self.parser.next_token().type == Token.ASSIGN and self.parser.next_token().data == "=":
                 return self.compile_expression_as_statement()
+            else:
+                raise BFSyntaxError("Unexpected %s after %s" % (self.parser.next_token(), self.parser.current_token()))
 
         elif token.type in [Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE]:  # ++ID;
             return self.compile_expression_as_statement()
