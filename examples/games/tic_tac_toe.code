@@ -36,38 +36,34 @@ bool ask_play_again() {
 void print_board() {
     for (int i = 0; i < 9; i++) {
         printchar(board[i]);
-        if (i % 3 == 2) {
+        if (i % 3 == 2)
             print("\n---------\n");
-        } else {
+        else
             print(" | ");
-        }
     }
 }
 
 void init_board() {
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < 9; i++)
         board[i] = ' ';
-    }
 }
 
 char check_win_or_tie() {
     char winner = ' ';
     // check rows
-    for (int row = 0; row < 3; row++) {
-        if (board[row][0] == board[row][1] && board[row][0] == board[row][2] && board[row][0] != ' ') {
+    for (int row = 0; row < 3; row++)
+        if (board[row][0] == board[row][1] && board[row][0] == board[row][2] && board[row][0] != ' ')
             winner = board[row][0];
-        }
-    }
+
     // check columns
-    for (int col = 0; col < 3; col++) {
-        if (board[0][col] == board[1][col] && board[0][col] == board[2][col] && board[0][col] != ' ') {
+    for (int col = 0; col < 3; col++)
+        if (board[0][col] == board[1][col] && board[0][col] == board[2][col] && board[0][col] != ' ')
             winner = board[0][col];
-        }
-    }
+
     // check diagonals
-    if (((board[0][0] == board[1][1] && board[0][0] == board[2][2]) || (board[0][2] == board[1][1] && board[0][2] == board[2][0])) && (board[1][1] != ' ')) {
+    if (((board[0][0] == board[1][1] && board[0][0] == board[2][2]) || (board[0][2] == board[1][1] && board[0][2] == board[2][0])) && (board[1][1] != ' '))
         winner = board[1][1];
-    }
+
     return winner;
 }
 
@@ -75,11 +71,9 @@ int get_next_move(bool player_X_turn) {
     int move = 0;
     while (move < 1 || move > 9 || board[move-1] != ' ') { // humans count from 1 :)
         print("Player ");
-        if (player_X_turn) {
-            printchar('X');
-        } else {
-            printchar('O');
-        }
+        if (player_X_turn) printchar('X');
+        else               printchar('O');
+
         print(" turn:\n");
         move = readint();
     }
@@ -100,11 +94,10 @@ int main() {
 
         while (!game_over) {
             int move = get_next_move(player_X_turn);
-            if (player_X_turn) {
+            if (player_X_turn)
                 board[move-1]='X';
-            } else {
+            else
                 board[move-1]='O';
-            }
             move = 0;
             player_X_turn = !player_X_turn;
             moves_so_far++;
@@ -118,19 +111,16 @@ int main() {
                 printchar(winner);
                 print(" Won!\n");
                 game_over = true;
-            } else {
-                if (moves_so_far == 9) {
-                    print("Game is a tie!\n");
-                    game_over = true;
-                }
+            } else if (moves_so_far == 9) {
+                print("Game is a tie!\n");
+                game_over = true;
             }
         }
 
-        if (ask_play_again() == true) {
+        if (ask_play_again() == true)
             print("Great! Let's start a new game...\n");
-        } else {
+        else
             still_playing = false;
-        }
     }
     print("Goodbye :)\n");
 }

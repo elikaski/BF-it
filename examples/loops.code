@@ -38,4 +38,33 @@ int main() {
         printint(arr[i]);
         print("\n");
     }
+
+    // while can be without scope - then it will execute only the first statement after it
+    x = 0;
+    while (x++ < 10)
+        print("x");
+    print("\n");
+
+    // for can be without scope - then it will execute only the first statement after it
+    for (int i = 0; i < 10; i++)
+        printint(i);
+    print("\n");
+
+
+    // for and if combination - always execute the first statement
+    for (int i = 0; i < 10; i++)
+        if (i % 2 == 0)
+            printint(i);
+    print("\n");
+
+
+    // for inside for
+    int arr[3][3];
+    for (int i = 0; i < 9; i++)
+        arr[i] = i;
+    for (int x = 0; x < 3; x++)
+        for (int y = 0; y < 3; y++)
+            printint(arr[x][y]);
+    print("\n");
+
 }

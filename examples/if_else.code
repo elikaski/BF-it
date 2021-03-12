@@ -1,5 +1,24 @@
 int main() {
-	print("Please enter a number: ");
+
+    // can either have scope {} after if/else or not :)
+
+    print("Please enter a number: ");
+    int x = readint();
+    if (x == 1)
+        print("you chose 1\n");
+    else if (x == 2) {
+        print("you chose 2!!! YOU WIN\n");
+        print("2 is a magic number :)\n");
+    }
+    else if (x == 3) {print("3 is okay too\n");}
+    else if (x % 2 == 0)
+        print("at least you chose an even number..\n");
+    else
+        print("you don't cooperate :(\n");
+
+
+
+	print("Please enter another number: ");
 	int num = readint();
 	print("\n");
 

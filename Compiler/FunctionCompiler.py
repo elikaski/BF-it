@@ -719,73 +719,65 @@ class FunctionCompiler:
         return code
 
     def compile_if(self):
+        # if (expression) statement (else statement)?   note - statement can be scope { }
+
         self.parser.check_next_tokens_are([Token.LPAREN])
         self.parser.advance_token(amount=2)  # skip to after LPAREN
 
         expression_code = self.compile_expression()
-        self.parser.check_current_tokens_are([Token.RPAREN, Token.LBRACE])
-        self.parser.advance_token()  # point to LBRACE
+        self.parser.check_current_tokens_are([Token.RPAREN])
+        self.parser.advance_token()  # point to after RPAREN
 
-        token_after_RBRACE = self.parser.token_at_index(self.parser.find_matching() + 1)
-        if token_after_RBRACE.type != Token.ELSE:
-            # if without else
-
-            inside_if_code = self.compile_scope()
-
-            code = expression_code  # evaluate expression
-            code += "<"  # point to the expression
-            code += "["  # if it is 0, jump to after the <if> scope
-            code += inside_if_code  # <if> scope code. after this code, pointer points to the next available cell, which is the expression's cell
-            code += "[-]"  # zero the expression
-            code += "]"  # after <if> scope
-
-            return code
-
-        # if ... else ...
+        # if ... (else ...)?
         # need to use 2 temp cells
         # expression, execute_else
 
         self.increase_stack_pointer(amount=2)
-        inside_if_code = self.compile_scope()
+        inside_if_code = self.compile_statement()
 
-        self.parser.check_current_tokens_are([Token.ELSE, Token.LBRACE])
-        self.parser.advance_token()  # skip the 'else'
-        inside_else_code = self.compile_scope()
+        have_else = self.parser.current_token().type == Token.ELSE
+        if have_else:
+            self.parser.advance_token()  # skip the 'else'
+            inside_else_code = self.compile_statement()
         self.decrease_stack_pointer(amount=2)
 
         code = expression_code  # evaluate expression. after this we point to "execute_else" cell
-        code += "[-]+"  # execute_else = 1
+        if have_else:
+            code += "[-]+"  # execute_else = 1
         code += "<"  # point to the expression
         code += "["  # if it is non-zero
-        code += ">-"  # execute_else = 0
+        code += ">"  # point to execute_else
+        if have_else:
+                code += "-"  # execute_else = 0
         code += ">"  # point to next available cell
         code += inside_if_code  # after this we point to the same cell (one after execute_else)
         code += "<<"  # point to expression
         code += "[-]"  # expression = 0
         code += "]"  # end if
+        # now we point to next available cell (what used to be expression_code)
 
-        code += ">"  # point to execute_else
-        code += "["  # if it is non-zero
-        code += ">"  # point to next available cell
-        code += inside_else_code  # after this we point to the same cell (one after execute_else)
-        code += "<"  # point to execute_else
-        code += "-"  # execute_else = 0
-        code += "]"  # end if
-
-        code += "<"  # point to next available cell (what used to be expression_code)
+        if have_else:
+            code += ">"  # point to execute_else
+            code += "["  # if it is non-zero
+            code += ">"  # point to next available cell
+            code += inside_else_code  # after this we point to the same cell (one after execute_else)
+            code += "<"  # point to execute_else
+            code += "-"  # execute_else = 0
+            code += "]"  # end if
+            code += "<"  # point to next available cell (what used to be expression_code)
 
         return code
 
-    def compile_while(self):
+    def compile_while(self): #  while (expression) statement       note - statement can be scope { }
         self.parser.check_next_tokens_are([Token.LPAREN])
         self.parser.advance_token(amount=2)  # skip to after LPAREN
 
         expression_code = self.compile_expression()
 
-        self.parser.check_current_tokens_are([Token.RPAREN, Token.LBRACE])
-        self.parser.advance_token()  # i points to LBRACE
+        self.parser.check_current_tokens_are([Token.RPAREN])
+        self.parser.advance_token()  # point to after RPAREN
 
-        inner_scope_code = self.compile_scope()
+        inner_scope_code = self.compile_statement()
 
         code = expression_code  # evaluate expression
         code += "<"  # point to the expression
@@ -798,7 +790,7 @@ class FunctionCompiler:
         return code
 
     def compile_for(self):
-        # for (statement expression; expression) { inner_scope_code }          note: statement contains ;
+        # for (statement expression; expression) inner_scope_code   note: statement contains ;, and inner_scope_code can be scope { }
         # (the statement/second expression/inner_scope_code can be empty)
         # (the statement cannot contain scope - { and } )
 
@@ -849,16 +841,15 @@ class FunctionCompiler:
         self.parser.check_current_tokens_are([Token.RPAREN])
         self.parser.advance_token()  # skip )
 
-        # compiling <for> scope inside { }:
-        self.parser.check_current_tokens_are([Token.LBRACE])
-        inner_scope_code = self.insert_scope_variables_into_ids_map()
-        if manually_inserted_variable_in_for_definition:
-            inner_scope_code += "<" * get_variable_size(variable)
-        inner_scope_code += self.compile_scope_statements()
+        inner_scope_code = ""
+        if self.parser.current_token().type == Token.LBRACE:  # do we have {} as for's statement?
+            # compiling <for> scope inside { }:
+            self.insert_scope_variables_into_ids_map()
+            inner_scope_code += self.compile_scope_statements()
+        else:
+            inner_scope_code += self.compile_statement()
         # =============== exit FOR scope ===============
-        inner_scope_code += self.exit_scope()
-        if manually_inserted_variable_in_for_definition:
-            inner_scope_code += ">" * get_variable_size(variable)
+        self.exit_scope()
         # ==============================================
 
         code += initial_statement
@@ -917,13 +908,13 @@ class FunctionCompiler:
         elif token.type == Token.PRINT:  # print(string);
             return self.compile_print_string()
 
-        elif token.type == Token.IF:  # if (expression) {inner_scope} (else {inner_scope})?
+        elif token.type == Token.IF:
             return self.compile_if()
 
         elif token.type == Token.LBRACE:
             return self.compile_scope()
 
-        elif token.type == Token.WHILE:  # while (expression) {inner_scope}
+        elif token.type == Token.WHILE:
             return self.compile_while()
 
         elif token.type == Token.RETURN:
