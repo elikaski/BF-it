@@ -1,7 +1,12 @@
-from Compiler.Parser import Parser
-from Compiler.Node import *
-from Compiler.General import *
-from Compiler.Globals import *
+from collections import namedtuple
+from functools import reduce
+from .Exceptions import BFSyntaxError, BFSemanticError
+from .Functions import check_function_exists, get_function_object
+from .General import get_variable_dimensions, get_move_to_return_value_cell_code, get_print_string_code
+from .Globals import create_variable_from_definition, get_global_variables, get_variable_size
+from .Node import NodeToken, NodeArraySetElement, NodeUnaryPrefix, NodeUnaryPostfix, NodeArrayGetElement, NodeFunctionCall
+from .Parser import Parser
+from .Token import Token
 
 """
 This file implements the FunctionCompiler object
@@ -17,17 +22,6 @@ This is implemented in the get_code() function
 
 FunctionCompiler object holds tokens correspond to the function so that we can compile it on demand
 """
-
-
-class LibraryFunctionCompiler:
-    def __init__(self, name, type, parameters, code):
-        self.name = name
-        self.type = type
-        self.parameters = parameters
-        self.code = code
-
-    def get_code(self, current_stack_pointer):
-        return self.code
 
 
 class FunctionCompiler:
@@ -98,7 +92,7 @@ class FunctionCompiler:
     # =================
     def insert_global_variables_to_function_scope(self):
         self.add_ids_map()
-        for variable in global_variables:
+        for variable in get_global_variables():
             self.insert_to_ids_map(variable)
 
     def get_array_index_expression(self):

@@ -1,5 +1,5 @@
-from Compiler.Token import Token
-from Compiler.Globals import BFSyntaxError, BFSemanticError
+from .Exceptions import BFSyntaxError, BFSemanticError
+from .Token import Token
 
 
 class Parser:
