@@ -25,4 +25,17 @@ int main() {
 		printint(x);
 		print(" ");
 	}
+
+    print("\n\n");
+
+    // can define an array inside for definition
+    print("Let's calculate some squares!\n");
+    i = 0;
+    for (int arr[10]; i < 10; i++) {
+        arr[i] = i*i;
+        printint(i);
+        print(" - ");
+        printint(arr[i]);
+        print("\n");
+    }
 }

@@ -859,12 +859,12 @@ class FunctionCompiler:
         self.parser.check_current_tokens_are([Token.LBRACE])
         inner_scope_code = self.insert_scope_variables_into_ids_map()
         if manually_inserted_variable_in_for_definition:
-            inner_scope_code += "<"
+            inner_scope_code += "<" * get_variable_size(variable)
         inner_scope_code += self.compile_scope_statements()
         # =============== exit FOR scope ===============
         inner_scope_code += self.exit_scope()
         if manually_inserted_variable_in_for_definition:
-            inner_scope_code += ">"
+            inner_scope_code += ">" * get_variable_size(variable)
         # ==============================================
 
         code += initial_statement
@@ -878,7 +878,7 @@ class FunctionCompiler:
         code += "]"  # after <for> scope
 
         if manually_inserted_variable_in_for_definition:
-            code += "<"
+            code += "<" * get_variable_size(variable)
 
         return code
 
