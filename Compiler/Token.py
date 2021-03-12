@@ -1,4 +1,4 @@
-class Token(object):
+class Token:
 
     INT = "INT"
     VOID = "VOID"

@@ -1,4 +1,5 @@
-from Compiler.Globals import *
+from .Exceptions import BFSyntaxError, BFSemanticError
+from .Token import Token
 
 """
 This file holds functions that generate general Brainfuck code

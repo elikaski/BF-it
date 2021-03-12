@@ -2,9 +2,9 @@
 
 import argparse
 import os
+import Interpreter
 from Compiler import Compiler
 from Compiler import Minify
-import Interpreter
 
 
 def process_args():

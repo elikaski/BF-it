@@ -1,5 +1,5 @@
 import re
-from Compiler.Token import Token
+from .Token import Token
 
 
 class LexicalErrorException(Exception):

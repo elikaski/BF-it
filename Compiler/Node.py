@@ -1,4 +1,14 @@
-from Compiler.General import *
+from .Exceptions import BFSemanticError
+from .General import get_copy_from_variable_code
+from .General import get_copy_to_variable_code
+from .General import get_move_left_index_cell_code
+from .General import get_move_right_index_cells_code
+from .General import get_offset_to_variable
+from .General import get_op_between_literals_code
+from .General import get_token_code
+from .General import get_unary_postfix_op_code
+from .General import get_unary_prefix_op_code
+from .Token import Token
 
 """
 This file holds classes that are used to create the parse tree of expressions
