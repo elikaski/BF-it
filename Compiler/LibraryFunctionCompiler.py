@@ -64,17 +64,40 @@ def get_printint_code():
     # return_cell value_to_print_cell
 
     code = ">"  # point to value_to_print cell
-    code += ">[-]" * 10 + "<" * 10  # zero some cells
+    code += ">[-]" * 8 + "<" * 8  # zero some cells
 
-    # ==============================================================================================
-    # code to print num (taken from https://esolangs.org/wiki/brainfuck_algorithms#Print_value_of_cell_x_as_number_.288-bit.29)
-    code += ">>++++++++++<<[->+>-[>+>>]>[+[-<+>]>+>>]<<<<<<]>>[-]>>>++++++++++<[->-[>+>>]>[+[-"
-    code += "<+>]>+>>]<<<<<]>[-]>>[>++++++[-<++++++++>]<.<<+>+>[-]]<[<[->-<]++++++[->++++++++<"
-    code += "]>.[-]]<<++++++[-<++++++++>]<.[-]<<[-<+>]<"
-    # todo either document this or write one of my own
-    # ==============================================================================================
+    code += ">++++++++++<"  # div amount
+    code += "[->-[>+>>]>[+[<+>-]>+>>]<<<<<]"  # value_to_print/10
+    code += ">[-]"  # zero d-n%d
+    code += ">>"  # point to div result
 
-    code += "<"  # point to value_to_return cell
+    code += ">++++++++++<"  # div amount
+    code += "[->-[>+>>]>[+[<+>-]>+>>]<<<<<]"  # res/10
+    code += ">[-]"  # zero d-n%d
+    code += ">>"  # point to div result
+
+    code += "["  # if the first digit is not 0
+    code += ">++++++[<++++++++>-]<."  # add 48 to the first digit and print it
+    code += "<<"
+    code += "+>"  # set is_over_100 to true
+    code += "+>"  # add 1 to the second digit so it prints even when it's 0
+    code += "[-]"  # zero the first digit
+    code += "]"  # end if
+
+    code += "<"  # point to the second digit
+
+    code += "["  # if the second digit is not 0
+    code += "<[>-<-]"  # if is_over_100 is true then subtract 1 from the second digit
+    code += "++++++[>++++++++<-]>."  # add 48 to the second digit and print it
+    code += "[-]"  # zero the second digit
+    code += "]"  # end if
+
+    code += "<<"  # point to the cell after the third digit
+    code += "++++++[<++++++++>-]<."  # add 48 to the third digit and print it
+    code += "[-]"  # zero the third digit
+    code += "<<"  # point to value_to_print_cell which is 0
+
+    code += "<"  # point to return_cell
     return code
 
 
