@@ -789,7 +789,7 @@ class FunctionCompiler:
 
         return code
 
-    def compile_do_while(self):  # do statement while (expression)       note - statement can be scope { }
+    def compile_do_while(self):  # do statement while (expression) semicolon      note - statement can be scope { }
         self.parser.check_current_tokens_are([Token.DO])
         self.parser.advance_token()
 
@@ -801,7 +801,7 @@ class FunctionCompiler:
         expression_code = self.compile_expression()
 
         self.parser.check_current_tokens_are([Token.RPAREN, Token.SEMICOLON])
-        self.parser.advance_token()  # point to after RPAREN
+        self.parser.advance_token(amount=2)  # point to after SEMICOLON
 
         code = "[-]+"  # set expression to 1. since do while loops executes the scope code first.
         code += "["  # go in scope
