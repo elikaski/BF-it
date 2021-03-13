@@ -805,8 +805,8 @@ class FunctionCompiler:
 
         code = "[-]+"  # set expression to 1. since do while loops executes the scope code first.
         code += "["  # go in scope
-        code += inner_scope_code  # <do-while> scope code. after this code, pointer points to the next available cell. i.e one after the expression
-        code += expression_code  # evaluate the expression
+        code += inner_scope_code  # <do-while> scope code. after this code, pointer points to the same cell. i.e the expression
+        code += expression_code  # evaluate the expression, after this code, the pointer is pointing to the next cell
         code += "<"  # point to the expression
         code += "]"  # after <do-while> scope
 
