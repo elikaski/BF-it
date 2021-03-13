@@ -12,6 +12,7 @@ class Token:
     ELSE = "ELSE"
     WHILE = "WHILE"
     FOR = "FOR"
+    DO = "DO"
     BREAK = "BREAK"
     CONTINUE = "CONTINUE"
     SEMICOLON = "SEMICOLON"

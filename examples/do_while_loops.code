@@ -1,0 +1,38 @@
+char read_one_char() {
+    // take the first char and ignore anything else, until reaching newline
+    char res = readchar();
+    while (readchar() - '\n') {}
+    return res;
+}
+
+int main() {
+    int i = 0;
+    do {
+        printchar(i + 48);
+        printchar(' ');
+    } while (i++ < 9);
+
+    printchar('\n');
+
+    i = 0;
+
+    // do while loops can be without scope brackets - it will only execute the first statement after it
+    do printchar(i + 48);
+    while (i++ < 9);
+
+    printchar('\n');
+
+    // Here is a simple number input validation
+    bool valid = false;
+    int digit = 0;
+    do {
+        print("Please input a digit: ");
+        digit = read_one_char() - 48;
+        if (digit >= 0 && digit <= 9) valid = true;
+        else print("\nInvalid digit\n");
+    } while (!valid);
+
+    print("The inputted digit is ");
+    printchar(digit + 48);
+    printchar('\n');
+}
