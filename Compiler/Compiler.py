@@ -2,8 +2,8 @@
 from .Exceptions import BFSyntaxError, BFSemanticError
 from .FunctionCompiler import FunctionCompiler
 from .Functions import check_function_exists, get_function_object, insert_function_object
-from .General import get_NUM_token_value, get_set_cell_value_code
-from .Globals import get_global_variables_size, get_variable_size, insert_global_variable, create_variable_from_definition
+from .General import get_NUM_token_value, get_set_cell_value_code, get_literal_token_code, unpack_literal_tokens_to_array_dimensions
+from .Globals import get_global_variables_size, get_variable_size, get_variable_dimensions, insert_global_variable, create_variable_from_definition
 from .Lexical_analyzer import analyze
 from .LibraryFunctionCompiler import insert_library_functions
 from .Parser import Parser
@@ -38,16 +38,17 @@ class Compiler:
         # take all tokens between INT and RBRACE and pass them to function object
         function_tokens = self.parser.tokens[self.parser.current_token_index:RBRACE_index+1]
         # skip function definition
-        self.parser.current_token_index = RBRACE_index+1
+        self.parser.advance_to_token_at_index(RBRACE_index+1)
 
         function = FunctionCompiler(function_name, function_tokens)
         return function
 
     def compile_global_variable_definition(self):
-        # INT ID (ASSIGN NUM | (LBRACK NUM RBRACK)+)? SEMICOLON
+        # INT ID (ASSIGN NUM | (LBRACK NUM RBRACK)+ (ASSIGN LBRACE ... RBRACE)?)? SEMICOLON
         # returns code that initializes this variable, and advances pointer according to variable size
 
         self.parser.check_current_tokens_are([Token.INT, Token.ID])
+        ID_token = self.parser.next_token()
         variable = create_variable_from_definition(self.parser, advance_tokens=True)
         insert_global_variable(variable)
 
@@ -57,9 +58,30 @@ class Compiler:
 
         code = '[-]' if ZERO_CELLS_BEFORE_USE else ''
         if get_variable_size(variable) > 1:  # its an array
-            self.parser.check_current_tokens_are([Token.SEMICOLON])
-            self.parser.advance_token()  # skip SEMICOLON
-            code = (code + '>') * get_variable_size(variable)  # advance to after this variable
+            if self.parser.current_token().type == Token.SEMICOLON:
+                # array definition - INT ID (LBRACK NUM RBRACK)+ SEMICOLON
+                self.parser.advance_token()  # skip SEMICOLON
+                code = (code + '>') * get_variable_size(variable)  # advance to after this variable
+                return code
+            elif self.parser.current_token().type == Token.ASSIGN and self.parser.current_token().data == "=":
+                # array definition and initialization - INT ID (LBRACK NUM RBRACK)+ ASSIGN (LBRACE ... RBRACE)+ SEMICOLON
+                self.parser.advance_token()  # skip ASSIGN
+                self.parser.check_current_tokens_are([Token.LBRACE])
+
+                literal_tokens_list = self.parser.compile_array_initialization_list()
+                self.parser.check_current_tokens_are([Token.SEMICOLON])
+                self.parser.advance_token()  # skip SEMICOLON
+
+                array_dimensions = get_variable_dimensions(variable)
+                unpacked_literals_list = unpack_literal_tokens_to_array_dimensions(ID_token, array_dimensions, literal_tokens_list)
+
+                for literal in unpacked_literals_list:
+                    code += get_literal_token_code(literal)  # evaluate this literal and point to next array element
+                return code
+            else:
+                raise BFSyntaxError("Unexpected %s in array definition. Expected SEMICOLON (;) or ASSIGN (=)" % self.parser.current_token())
+
+
         elif self.parser.current_token().type == Token.SEMICOLON:  # no need to initialize
             self.parser.advance_token()  # skip SEMICOLON
             code += '>'  # advance to after this variable

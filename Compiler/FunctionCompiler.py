@@ -2,9 +2,9 @@ from collections import namedtuple
 from functools import reduce
 from .Exceptions import BFSyntaxError, BFSemanticError
 from .Functions import check_function_exists, get_function_object
-from .General import get_variable_dimensions, get_move_to_return_value_cell_code, get_print_string_code
-from .Globals import create_variable_from_definition, get_global_variables, get_variable_size
-from .Node import NodeToken, NodeArraySetElement, NodeUnaryPrefix, NodeUnaryPostfix, NodeArrayGetElement, NodeFunctionCall
+from .General import get_variable_dimensions_from_token, get_move_to_return_value_cell_code, get_print_string_code, get_variable_from_ID_token
+from .Globals import create_variable_from_definition, get_global_variables, get_variable_size, is_variable_array
+from .Node import NodeToken, NodeArraySetElement, NodeUnaryPrefix, NodeUnaryPostfix, NodeArrayGetElement, NodeFunctionCall, NodeArrayAssignment
 from .Parser import Parser
 from .Token import Token
 
@@ -115,7 +115,7 @@ class FunctionCompiler:
         self.parser.advance_token()  # skip RBRACK
 
         # now handle the next dimensions (if multi-dimensional array)
-        dimensions = get_variable_dimensions(self.ids_map_list, ID_token)
+        dimensions = get_variable_dimensions_from_token(self.ids_map_list, ID_token)
         if len(dimensions) > 1:
             multiply_token = Token(Token.BINOP, ID_token.line, ID_token.column, data="*")
             add_token = Token(Token.BINOP, ID_token.line, ID_token.column, data="+")
@@ -166,6 +166,21 @@ class FunctionCompiler:
             idx += 1  # advance to one after the RBRACK
 
         return self.parser.token_at_index(idx)
+
+    def compile_array_assignment(self, token_id):
+        # int id[a][b][c]... = {1, 2, 3, ...};
+        # or int id[a][b][c]... = {{1, 2}, {3, 4}, ...};
+        # or array assignment: id = {1, 2, 3, ...};
+        self.parser.check_current_tokens_are([Token.ASSIGN])
+        if self.parser.current_token().data != "=":
+            raise BFSemanticError("Unexpected %s when assigning array. Expected ASSIGN (=)" % self.parser.current_token())
+
+        assert self.parser.current_token().type == Token.ASSIGN and self.parser.current_token().data == "="
+        self.parser.check_current_tokens_are([Token.ASSIGN, Token.LBRACE])
+        self.parser.advance_token(1)  # skip to LBRACE
+        literal_tokens_list = self.parser.compile_array_initialization_list()
+
+        return NodeArrayAssignment(self.ids_map_list[:], token_id, literal_tokens_list)
 
     def add_ids_map(self):
         """
@@ -533,11 +548,19 @@ class FunctionCompiler:
         return n
 
     def assignment(self):
-        # assignment: ID ASSIGN expression | ID (LBRACK expression RBRACK)+ ASSIGN expression | logical_or
+        # assignment: ID ASSIGN expression | ID ASSIGN ARRAY_INITIALIZATION | ID (LBRACK expression RBRACK)+ ASSIGN expression | logical_or
 
         if self.parser.current_token().type == Token.ID and self.parser.next_token().type == Token.ASSIGN:
-            # ID ASSIGN expression
 
+            if self.parser.next_token(2).type == Token.LBRACE:  # ID ASSIGN ARRAY_INITIALIZATION
+                token_ID = self.parser.current_token()
+                self.parser.advance_token()  # skip ID
+                variable_ID = get_variable_from_ID_token(self.ids_map_list, token_ID)
+                if not is_variable_array(variable_ID):
+                    raise BFSemanticError("Trying to assign array to non-array variable %s" % token_ID)
+                return self.compile_array_assignment(token_ID)
+
+            # ID ASSIGN expression
             id_token = self.parser.current_token()
             assign_token = self.parser.next_token()
             self.parser.advance_token(amount=2)  # skip ID ASSIGN
@@ -873,7 +896,7 @@ class FunctionCompiler:
 
         token = self.parser.current_token()
 
-        if token.type == Token.INT:  # INT ID ([NUM])? (= EXPRESSION)? ;
+        if token.type == Token.INT:  # INT ID ((= EXPRESSION) | ([NUM])+ (= ARRAY_INITIALIZATION)?)? SEMICOLON
             self.parser.check_next_tokens_are([Token.ID])
             self.parser.advance_token()  # skip "INT" (now points to ID)
             assert self.parser.current_token().type == Token.ID
@@ -882,16 +905,22 @@ class FunctionCompiler:
                 self.parser.advance_token(2)  # skip ID SEMICOLON
                 return ''  # no code is generated here. code was generated for defining this variable when we entered the scope
 
-            elif self.parser.next_token().type == Token.LBRACK:  # INT ID (LBRACK NUM RBRACK)+ SEMICOLON
+            elif self.parser.next_token().type == Token.LBRACK:  # INT ID (LBRACK NUM RBRACK)+ (= ARRAY_INITIALIZATION)? SEMICOLON
+                # array definition (int arr[2][3]...[];) or array definition and initialization (arr[2][3]...[] = {...})
+                token_id = self.parser.current_token()
                 self.parser.advance_token(1)  # skip ID
-                while self.parser.current_token().type == Token.LBRACK:
+                while self.parser.current_token().type == Token.LBRACK:  # loop to skip to after last RBRACK ]
                     self.parser.check_current_tokens_are([Token.LBRACK, Token.NUM, Token.RBRACK])
                     self.parser.advance_token(3)  # skip LBRACK, NUM, RBRACK
+                if self.parser.current_token().type == Token.ASSIGN:  # initialization
+                    initialization_node = self.compile_array_assignment(token_id)
+                    return initialization_node.get_code(self.current_stack_pointer()) + "<"  # discard expression value
+                # just definition
                 self.parser.check_current_tokens_are([Token.SEMICOLON])
-                self.parser.advance_token(1)  # skip SEMICOLON
+                self.parser.advance_token()  # skip SEMICOLON
                 return ''  # no code is generated here. code was generated for defining this variable when we entered the scope
 
-            elif self.parser.next_token().type == Token.ASSIGN and self.parser.next_token().data == "=":
+            elif self.parser.next_token().type == Token.ASSIGN and self.parser.next_token().data == "=":  # INT ID = EXPRESSION SEMICOLON
                 return self.compile_expression_as_statement()
             else:
                 raise BFSyntaxError("Unexpected %s after %s" % (self.parser.next_token(), self.parser.current_token()))

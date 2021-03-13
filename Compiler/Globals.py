@@ -1,6 +1,6 @@
 from collections import namedtuple
-from functools import reduce
 from .Token import Token
+from .General import dimensions_to_size
 
 """
 This file holds the program's functions and global variables
@@ -38,7 +38,15 @@ def create_variable(name, type, dimensions):
 
 def get_variable_size(variable):
     # return total variable size
-    return reduce(lambda x, y: x*y, variable.dimensions)
+    return dimensions_to_size(variable.dimensions)
+
+
+def get_variable_dimensions(variable):
+    return variable.dimensions
+
+
+def is_variable_array(variable):
+    return variable.dimensions != [1]
 
 
 def create_variable_from_definition(parser, index=None, advance_tokens=False):

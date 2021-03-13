@@ -60,8 +60,7 @@ def brainfuck(program):
         instruction_pointer += 1
 
     if data_pointer != 0:
-        print("WARNING (interpreter) - data pointer is not 0 at the end of the execution (possibly compiler issue)")
-
+        print("WARNING (interpreter) - at the end of the execution the data pointer is %s instead of 0 (possibly a compiler issue)" % str(data_pointer))
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:

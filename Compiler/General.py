@@ -1,5 +1,6 @@
 from .Exceptions import BFSyntaxError, BFSemanticError
 from .Token import Token
+from functools import reduce
 
 """
 This file holds functions that generate general Brainfuck code
@@ -108,6 +109,52 @@ def get_move_to_return_value_cell_code(return_value_cell, current_stack_pointer)
     return get_move_to_offset_code(current_stack_pointer - return_value_cell)
 
 
+def unpack_multidimensional_literal_tokens_to_array_dimensions(ID_token, array_dimensions, literal_tokens_list):
+    if len(array_dimensions) == 0:
+        raise BFSemanticError("Tried to initialize array %s with too many nested sub-arrays" % ID_token)
+    if len(literal_tokens_list) > array_dimensions[0]:
+        raise BFSemanticError("Tried to initialize array %s dimension %s with too many elements (%s)"
+                              % (ID_token, str(array_dimensions), str(len(literal_tokens_list))))
+
+    result = []
+    for element in literal_tokens_list:
+        if isinstance(element, list):
+            # recursively unpack the list with the sub-dimension of the sub-array
+            # E.g if we have arr[3][3][3] and then this call will fill [3][3]=9 elements
+            result.extend(unpack_multidimensional_literal_tokens_to_array_dimensions(ID_token, array_dimensions[1:], element))
+        else:
+            result.append(element)
+            if len(array_dimensions) > 1:
+                dimension_size = dimensions_to_size(array_dimensions[1:])  # current size we need to fill
+                result.extend([Token(Token.NUM, 0, 0, "0")] * (dimension_size - 1))  # fill missing elements in this dimension with zeros
+
+    dimension_size = dimensions_to_size(array_dimensions)  # current size we need to fill
+    result.extend([Token(Token.NUM, 0, 0, "0")] * (dimension_size-len(result)))  # fill the result with zeros
+    return result
+
+
+def unpack_literal_tokens_to_array_dimensions(ID_token, array_dimensions, literal_tokens_list):
+    # gets array dimensions and list of (list of list of...) literal tokens to initialize it with
+    # returns one long list of literal tokens that can be used to initialize the array as a one dimensional array
+    # if there are missing literals to fill the entire array, then fill the blanks with NUM 0
+    # E.g if the code is int arr[3][3][3] = {{1,2,3}, {}, {7, 8}}
+    # Then this function receives ([3,3,3] and [[1,2,3],[],[7,8]]) and returns [1,2,3,0,0,0,7,8,0] (all are tokens)
+
+    array_size = dimensions_to_size(array_dimensions)  # current size we need to fill
+    if all(not isinstance(element, list) for element in literal_tokens_list):
+        # special case - if all elements are literals, then we allow assigning them as-is and not care about dimensions
+        # E.g if we have arr[3][3][3] = {1,2,3,4} then return [1,2,3,4,0,0,0,0,0]
+        unpacked_literals_list = literal_tokens_list + [Token(Token.NUM, 0, 0, "0")] * (array_size - len(literal_tokens_list))  # fill missing with zeros
+    else:
+        unpacked_literals_list = unpack_multidimensional_literal_tokens_to_array_dimensions(ID_token, array_dimensions, literal_tokens_list)
+
+    if len(unpacked_literals_list) > array_size:
+        raise BFSemanticError("Tried to initialize array %s with incompatible amount of literals."
+                              " (array size is %s and literals size is %s)" % (ID_token, str(array_size), str(len(unpacked_literals_list))))
+    assert len(unpacked_literals_list) == array_size
+    return unpacked_literals_list
+
+
 def get_copy_from_variable_code(ids_map_list, ID_token, current_pointer):
     # returns code that copies value from cell of variable ID to current pointer, and then sets the pointer to the next cell
 
@@ -123,14 +170,18 @@ def get_copy_from_variable_code(ids_map_list, ID_token, current_pointer):
     return code
 
 
-def get_token_code(ids_map_list, token, current_pointer):
+def get_token_ID_code(ids_map_list, token, current_pointer):
+    # generate code that evaluates the ID token at the current pointer, and sets the pointer to point to the next available cell
+    return get_copy_from_variable_code(ids_map_list, token, current_pointer)
+
+
+def get_literal_token_code(token):
     # generate code that evaluates the token at the current pointer, and sets the pointer to point to the next available cell
     if token.type == Token.NUM:
         value = get_NUM_token_value(token)
         code = "[-]"  # zero current cell
         code += get_set_cell_value_code(value, 0)  # set current cell to the num value
         code += ">"  # point to the next cell
-
         return code
 
     elif token.type == Token.CHAR:
@@ -139,24 +190,18 @@ def get_token_code(ids_map_list, token, current_pointer):
         code += ">"  # point to next cell
         return code
 
-    elif token.type == Token.ID:
-        code = get_copy_from_variable_code(ids_map_list, token, current_pointer)
-        return code
-
     elif token.type == Token.TRUE:
         code = "[-]"  # zero current cell
         code += "+"  # current cell = 1
         code += ">"  # point to next cell
-
         return code
 
     elif token.type == Token.FALSE:
         code = "[-]"  # zero current cell
         code += ">"  # point to next cell
-
         return code
 
-    raise NotImplementedError
+    raise NotImplementedError("Not implemented %s" % token)
 
 
 def get_divmod_code(right_token=None):
@@ -1026,7 +1071,11 @@ def get_variable_from_ID_token(ids_map_list, ID_token):
     raise BFSemanticError("'%s' does not exist" % str(ID_token))
 
 
-def get_variable_dimensions(ids_map_list, ID_token):
+def dimensions_to_size(dimensions):
+    return reduce(lambda x, y: x * y, dimensions)
+
+
+def get_variable_dimensions_from_token(ids_map_list, ID_token):
     variable = get_variable_from_ID_token(ids_map_list, ID_token)
     return variable.dimensions
 

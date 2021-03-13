@@ -1,13 +1,10 @@
 from .Exceptions import BFSemanticError
-from .General import get_copy_from_variable_code
-from .General import get_copy_to_variable_code
-from .General import get_move_left_index_cell_code
-from .General import get_move_right_index_cells_code
-from .General import get_offset_to_variable
-from .General import get_op_between_literals_code
-from .General import get_token_code
-from .General import get_unary_postfix_op_code
-from .General import get_unary_prefix_op_code
+from .General import get_copy_from_variable_code, get_copy_to_variable_code
+from .General import get_move_left_index_cell_code, get_move_right_index_cells_code
+from .General import get_offset_to_variable, get_variable_dimensions_from_token
+from .General import get_op_between_literals_code, get_literal_token_code, get_token_ID_code
+from .General import get_unary_prefix_op_code, get_unary_postfix_op_code
+from .General import unpack_literal_tokens_to_array_dimensions
 from .Token import Token
 
 """
@@ -58,7 +55,10 @@ class NodeToken(Node):
         if self.token.type in [Token.NUM, Token.CHAR, Token.ID, Token.TRUE, Token.FALSE]:
             # its a literal (leaf)
             assert self.left is None and self.right is None
-            return get_token_code(self.ids_map_list, self.token, current_pointer)
+            if self.token.type == Token.ID:
+                return get_token_ID_code(self.ids_map_list, self.token, current_pointer)
+            else:
+                return get_literal_token_code(self.token)
 
         elif self.token.type in [Token.BINOP, Token.RELOP, Token.AND, Token.OR, Token.BITWISE_SHIFT, Token.BITWISE_AND, Token.BITWISE_OR, Token.BITWISE_XOR]:
             code = self.left.get_code(current_pointer)
@@ -332,4 +332,27 @@ class NodeArraySetElement(NodeArrayElement):
 
         # now value is at the desired cell, and we point to the next available cell
 
+        return code
+
+
+class NodeArrayAssignment(Node):
+    """
+        Used for array assignment
+        E.g arr = = { 1, 2, 3... }
+    """
+    def __init__(self, ids_map_list, token_id, literal_tokens_list):
+        Node.__init__(self, ids_map_list)
+        self.token_id = token_id
+        self.literal_tokens_list = literal_tokens_list
+
+    def get_code(self, current_pointer, *args, **kwargs):
+        array_dimensions = get_variable_dimensions_from_token(self.ids_map_list, self.token_id)
+        unpacked_literals_list = unpack_literal_tokens_to_array_dimensions(self.token_id, array_dimensions, self.literal_tokens_list)
+
+        offset = get_offset_to_variable(self.ids_map_list, self.token_id, current_pointer)
+        code = "<" * offset  # point to first array element
+        for literal in unpacked_literals_list:
+            code += get_literal_token_code(literal)  # evaluate this literal and point to next array element
+        code += ">" * (offset - len(unpacked_literals_list))  # move back to the original position
+        code += ">"  # point to the next cell
         return code

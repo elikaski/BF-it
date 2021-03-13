@@ -60,8 +60,65 @@ void order_of_evaluation() {
     printint(arr2[0][1] == 13);
 }
 
+void array_initialization() {
+    // can initialize array in definition
+    int arr1[6] = {1, 2, 3, 4, 5, 6};
+    for (int i = 0; i < 6; i++) printint(arr1[i]); print("\n");
+
+
+    // uninitialized elements are initialized with zero
+    int arr2[6] = {1, 2, 3, };
+    for (int i = 0; i < 6; i++) printint(arr2[i]); print("\n");
+
+
+    // multidimensional initalization
+    int arr3[3][3] = {{1,2,3}, {4,5,6}, {7,8,9}};
+    for (int i = 0; i < 9; i++) printint(arr3[i]); print("\n");
+
+
+    // array with empty / missing brackets are filled with zero
+    int arr4[3][3] = {{1,2,3}, {}, {7}};
+    /*
+    will look like:
+    1 2 3
+    0 0 0
+    7 0 0
+    */
+    for (int i = 0; i < 9; i++) printint(arr4[i]); print("\n");
+
+
+    // can initialize multi-dimensional array with one-dimensional list - the missing elements are filled with zeros
+    int arr5[3][3] = {1, 2, 3, 4, };
+    for (int i = 0; i < 9; i++) printint(arr5[i]); print("\n");
+
+
+    // can initialize array with char/true/false
+    int arr6[5] = {'a', 'b', 'c', true, false};
+    for (int i = 0; i < 5; i++) {printint(arr6[i]); printchar(' ');} print("\n");
+}
+
+
+// can initialize global arrays too
+int global_array[3][3] = {1, 2, 3, 4, 5, 6,};
+void arrays_as_global_variables() {
+    for (int i = 0; i < 9; i++) printint(global_array[i]); print("\n");
+}
+
+void array_assignment() {
+    int arr[6] = {1, 2, 3, 4, 5, 6};
+    for (int i = 0; i < 6; i++) printint(arr[i]); print("\n");
+
+    // can assign arrays even not during initialization
+    arr = {6, 5, 4, 3, 2, 1};
+    for (int i = 0; i < 6; i++) printint(arr[i]); print("\n");
+
+}
+
 int main() {
     arrays_one_dimensional();
     arrays_multi_dimensional();
     order_of_evaluation();
+    array_initialization();
+    arrays_as_global_variables();
+    array_assignment();
 }

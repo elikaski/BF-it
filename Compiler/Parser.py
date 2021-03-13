@@ -20,6 +20,9 @@ class Parser:
     def advance_token(self, amount=1):
         self.current_token_index += amount
 
+    def advance_to_token_at_index(self, token_index):
+        self.current_token_index = token_index
+
     def token_at_index(self, index):
         assert index < len(self.tokens)
         return self.tokens[index]
@@ -80,3 +83,30 @@ class Parser:
 
     def check_current_tokens_are(self, tokens_list):
         self.check_next_tokens_are(tokens_list, starting_index=self.current_token_index - 1)
+
+    def compile_array_initialization_list(self):
+        # {1, 2, 3, ...} or {array_initialization_list, array_initialization_list, array_initialization_list, ...}
+        # parses the definition and returns a list (of list of list ....) of literal tokens (NUM, CHAR, TRUE, FALSE)
+        assert self.current_token().type == Token.LBRACE
+        self.advance_token()  # skip to after LBRACE
+
+        list_tokens = []
+
+        while self.current_token().type in [Token.NUM, Token.CHAR, Token.TRUE, Token.FALSE, Token.LBRACE]:
+            if self.current_token().type == Token.LBRACE:  # list of (literals | list)
+                list_tokens.append(self.compile_array_initialization_list())
+            else:  # literal
+                list_tokens.append(self.current_token())
+                self.advance_token()  # skip literal
+
+            if self.current_token().type not in [Token.COMMA, Token.RBRACE]:
+                raise BFSyntaxError("Unexpected %s (expected comma (,) or RBRACE (}))" % self.current_token())
+
+            if self.current_token().type == Token.COMMA:
+                self.advance_token()  # skip comma
+            if self.current_token().type == Token.RBRACE:
+                break
+
+        self.check_current_tokens_are([Token.RBRACE])
+        self.advance_token()  # skip RBRACE
+        return list_tokens
