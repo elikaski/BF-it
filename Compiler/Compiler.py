@@ -81,15 +81,30 @@ class Compiler:
             else:
                 raise BFSyntaxError("Unexpected %s in array definition. Expected SEMICOLON (;) or ASSIGN (=)" % self.parser.current_token())
 
-
         elif self.parser.current_token().type == Token.SEMICOLON:  # no need to initialize
             self.parser.advance_token()  # skip SEMICOLON
             code += '>'  # advance to after this variable
         else:
-            self.parser.check_current_tokens_are([Token.ASSIGN, Token.NUM, Token.SEMICOLON])
-            code += get_set_cell_value_code(get_NUM_token_value(self.parser.next_token()), 0, zero_next_cell_if_necessary=ZERO_CELLS_BEFORE_USE)
+            self.parser.check_current_tokens_are([Token.ASSIGN])
+            self.parser.advance_token()  # skip ASSIGN
+
+            value_to_set = 0
+            current_token = self.parser.current_token()
+
+            if current_token.type == Token.NUM:
+                value_to_set = get_NUM_token_value(current_token)
+            elif current_token.type == Token.CHAR:
+                value_to_set = ord(current_token.data)
+            elif current_token.type in [Token.TRUE, Token.FALSE]:
+                if current_token.type == Token.TRUE:
+                    value_to_set = 1
+            else:
+                raise BFSyntaxError("Expected NUM|CHAR|TRUE|FALSE in global variable definition. Got %s" % current_token)
+
+            code += get_set_cell_value_code(value_to_set, 0, zero_next_cell_if_necessary=ZERO_CELLS_BEFORE_USE)
             code += '>'  # advance to after this variable
-            self.parser.advance_token(amount=3)  # skip ASSIGN NUM SEMICOLON
+            self.parser.check_next_tokens_are([Token.SEMICOLON])
+            self.parser.advance_token(amount=2)  # skip (NUM|CHAR|TRUE|FALSE) SEMICOLON
 
         return code
 
