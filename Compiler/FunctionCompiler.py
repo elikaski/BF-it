@@ -10,17 +10,17 @@ from .Token import Token
 
 """
 This file implements the FunctionCompiler object
-It is where we actually compile code - statements, assignments, calculations, etc
+This is where we actually compile the code - statements, assignments, calculations, etc
 The syntax of the language is defined here as compilation rules
 
-A function is position dependent - it needs to know where on the tape it runs
+A function is position-dependent - it needs to know where on the tape it runs
 So that it can access global variables, which are at the beginning of the stack, correctly
 Because of that, the function's code is dependent on when/where we call it
 The idea is that we compile the function on demand - every time it is called
-And on every time we compile it - we pass it the current stack pointer
+And every time we compile it - we pass the current stack pointer to it
 This is implemented in the get_code() function
 
-FunctionCompiler object holds tokens correspond to the function so that we can compile it on demand
+The FunctionCompiler object holds tokens that correspond to the function so that we can compile it on demand
 """
 
 
@@ -36,17 +36,17 @@ class FunctionCompiler:
         self.return_value_cell = None  # will be set on every call to this function
 
     """
-    ids_map_list is a list of named tuples. each tuple represents a scope, and holds 2 items:
+    ids_map_list is a list of named tuples. Each tuple represents a scope, and holds 2 items:
         1. an index of the next available cell. (if we want to insert a new ID to the ids_map_list, it will be in that index)
         2. a dictionary that maps an ID (string) to an index - the cell where we hold that variable
 
-    we use this list as a stack:
+    We use this list as a stack:
         when entering a scope, we insert a (available_cell, dictionary) to the BEGINNING of the list
         when exiting a scope, we pop the last inserted tuple (the one at the BEGINNING of the list)
 
-    when declaring a variable in the current scope, we add it to the dictionary at the beginning of the list,
+    When declaring a variable in the current scope, we add it to the dictionary at the beginning of the list,
     and increase the 'next_available_cell' by 1
-    when retrieving a variable, we go through the list and return the first occurrence that matches the ID
+    When retrieving a variable, we go through the list and return the first occurrence that matches the ID
     """
 
     def process_function_definition(self):
@@ -184,9 +184,9 @@ class FunctionCompiler:
 
     def add_ids_map(self):
         """
-        first cells are global variable cells (index 0 to n)
+        the first cells are global variable cells (index 0 to n)
         the next cell (index n+1) is the return_value cell
-        every function assumes that these cell exist
+        every function assumes that these cells exist
         """
 
         next_available_cell = 0 if len(self.ids_map_list) == 0 else self.ids_map_list[0].next_available_cell
@@ -850,7 +850,7 @@ class FunctionCompiler:
             (this needs to be done before the <for> definition's statement)
             next, inside the for's scope {}:
             after calling insert_scope_variables_into_ids_map, we move the pointer to the left once, since it counts the ID we entered manually as well
-            after calling exit_scope, we move the pointer to the right, since it counts the the ID we entered manually, and we dont want it to be discarded after every iteration
+            after calling exit_scope, we move the pointer to the right, since it counts the ID we entered manually, and we don't want it to be discarded after every iteration
             finally, at the end of the <for> loop, we move the pointer once to the left, to discard the variable we defined manually
         """
 
@@ -981,7 +981,7 @@ class FunctionCompiler:
             return self.compile_for()
 
         elif token.type == Token.SEMICOLON:
-            #  empty statement
+            # empty statement
             self.parser.advance_token()  # skip ;
             return ""
 
@@ -1012,9 +1012,9 @@ class FunctionCompiler:
         return code
 
     def compile_function_scope(self, parameters):
-        #  returns code for the current function
-        #  parameters is a list of parameters, in the order of their declaration
-        #  will be inserted to the new scope prior to the scope's compilation
+        # returns code for the current function
+        # parameters is a list of parameters, in the order of their declaration
+        # will be inserted into the new scope prior to the scope's compilation
 
         """
             example layout:
@@ -1036,7 +1036,7 @@ class FunctionCompiler:
                 calling convention:
                 caller responsibility: make room for return_value (and zero its cell), place parameters, point to return_value cell
                 callee responsibility: put return value in return_value cell and point to it (thus "cleaning" parameters)
-                    can assume that there is a zerod cell at current_stack_pointer (return_value_cell) (therefore ids_map starts at index current_stack_pointer+1)
+                    can assume that there is a zeroed cell at current_stack_pointer (return_value_cell) (therefore ids_map starts at index current_stack_pointer+1)
                     can assume that the next cells match your parameters
                     assumes that initially, the pointer points to the first cell (return_value_cell).
                     therefore begin with '>' * (1 + parameters + scope variables)

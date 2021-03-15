@@ -53,7 +53,7 @@ class Parser:
             inc = Token.LPAREN
             dec = Token.RPAREN
         else:
-            raise BFSemanticError("no support for matching %s" % str(token_to_match))
+            raise BFSemanticError("No support for matching %s" % str(token_to_match))
 
         i = starting_index
         cnt = 0
@@ -68,7 +68,7 @@ class Parser:
 
             i += 1
 
-        raise BFSyntaxError("did not find matching %s for %s" % (dec, str(token_to_match)))
+        raise BFSyntaxError("Did not find matching %s for %s" % (dec, str(token_to_match)))
 
     def check_next_tokens_are(self, tokens_list, starting_index=None):
         if starting_index is None:

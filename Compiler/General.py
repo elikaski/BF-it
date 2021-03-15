@@ -156,7 +156,7 @@ def unpack_literal_tokens_to_array_dimensions(ID_token, array_dimensions, litera
 
 
 def get_copy_from_variable_code(ids_map_list, ID_token, current_pointer):
-    # returns code that copies value from cell of variable ID to current pointer, and then sets the pointer to the next cell
+    # returns code that copies the value from cell of variable ID to current pointer, and then sets the pointer to the next cell
 
     offset = get_offset_to_variable(ids_map_list, ID_token, current_pointer)
     code = "[-]"  # res = 0
@@ -426,7 +426,7 @@ def get_bitwise_code(code_logic):
 
 def get_unary_prefix_op_code(token, offset_to_variable=None):
     # returns code that:
-    # performs op on operand that is at the current pointer
+    # performs op on an operand that is at the current pointer
     # the result is placed in the cell of the operand
     # and the pointer points to the cell right after it (which becomes the next available cell)
 
@@ -449,7 +449,7 @@ def get_unary_prefix_op_code(token, offset_to_variable=None):
         return code
 
     elif token.type == Token.INCREMENT:
-        #  returns code that copies value from variable's cell at given offset, and adds 1 to both the copied and the original cell
+        # returns code that copies the value from the variable's cell at the given offset, and adds 1 to both the copied and the original cell
         assert offset_to_variable is not None
         offset = offset_to_variable
 
@@ -465,7 +465,7 @@ def get_unary_prefix_op_code(token, offset_to_variable=None):
         return code
 
     elif token.type == Token.DECREMENT:
-        #  returns code that copies value from variable's cell at given offset, and subtracts 1 from both the copied and the original cell
+        # returns code that copies the value from the variable's cell at the given offset, and subtracts 1 from both the copied and the original cell
         assert offset_to_variable is not None
         offset = offset_to_variable
 
@@ -481,7 +481,7 @@ def get_unary_prefix_op_code(token, offset_to_variable=None):
         return code
 
     elif token.type == Token.UNARY_MULTIPLICATIVE:
-        #  returns code that copies value from variable's cell at given offset, modifies both the copied and the original cell depending on the op
+        # returns code that copies the value from the variable's cell at the given offset, modifies both the copied and the original cell depending on the op
         assert offset_to_variable is not None
         offset = offset_to_variable
 
@@ -528,7 +528,7 @@ def get_unary_postfix_op_code(token, offset_to_variable):
     # and the pointer points to the cell right after it (which becomes the next available cell)
 
     if token.type == Token.INCREMENT:
-        #  returns code that copies value from variable's cell at given offset, and adds 1 to the original cell
+        # returns code that copies the value from the variable's cell at the given offset, and adds 1 to the original cell
         offset = offset_to_variable
 
         code = "[-]"  # res = 0
@@ -543,7 +543,7 @@ def get_unary_postfix_op_code(token, offset_to_variable):
         return code
 
     elif token.type == Token.DECREMENT:
-        #  returns code that copies value from variable's cell at given offset, and subtracts 1 from the original cell
+        # returns code that copies the value from the variable's cell at the given offset, and subtracts 1 from the original cell
         offset = offset_to_variable
 
         code = "[-]"  # res = 0
@@ -558,7 +558,7 @@ def get_unary_postfix_op_code(token, offset_to_variable):
         return code
 
     elif token.type == Token.UNARY_MULTIPLICATIVE:
-        # returns code that copies value from variable's cell at given offset, and modifies the original cell depending on the operation
+        # returns code that copies the value from the variable's cell at the given offset, and modifies the original cell depending on the operation
         offset = offset_to_variable
 
         code = "[-]"  # res = 0
@@ -594,8 +594,8 @@ def get_op_between_literals_code(op_token, right_token=None):
 
     op = op_token.data
     if op == "+" or op == "-":
-        code = ">[<" + op + ">-]"  # increase/decrease first operand and decrease second operand
-        # the pointer points to the next available cell, which is the second operand, which is 0
+        code = ">[<" + op + ">-]"  # increase/decrease the first operand and decrease the second operand
+        # the pointer now points to the next available cell, which is the second operand, which is 0
 
         return code
 
@@ -983,9 +983,9 @@ def get_op_between_literals_code(op_token, right_token=None):
 
 
 def get_print_string_code(string):
-    code = "[-]"  # zero current cell
-    code += ">[-]"  # zero next cell (will be used for loop counts)
-    code += "<"  # point to original cell ("character" cell)
+    code = "[-]"  # zero the current cell
+    code += ">[-]"  # zero the next cell (will be used for loop counts)
+    code += "<"  # point to the original cell ("character" cell)
 
     prev_value = 0
     for i in range(len(string)):
@@ -1003,7 +1003,7 @@ def get_move_right_index_cells_code(current_pointer, node_index):
     # used for arrays
     # returns a code that evaluates the index, then moves the pointer right, <index> amount of cells
     # at the end of execution, the layout is:
-    # 0  index next_available_cell (point to next available cell)
+    # 0 index next_available_cell (point to next available cell)
 
     # index, steps_taken_counter
     code = node_index.get_code(current_pointer)  # index

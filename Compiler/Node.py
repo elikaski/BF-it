@@ -138,10 +138,10 @@ class NodeUnaryPrefix(Node):
 
             # the token to apply on must be an ID
             if isinstance(self.node_literal, NodeToken) is False:
-                raise BFSemanticError("prefix operator %s can be applied to a variable only" % str(self.token_operation))
+                raise BFSemanticError("Prefix operator %s can only be applied to a variable" % str(self.token_operation))
 
             if self.node_literal.token.type != Token.ID:
-                raise BFSemanticError("prefix operator %s cannot be applied to %s, but to a variable only" % (str(self.token_operation), str(self.node_literal.token)))
+                raise BFSemanticError("Prefix operator %s cannot be applied to %s, but only to a variable" % (str(self.token_operation), str(self.node_literal.token)))
 
             offset_to_ID = get_offset_to_variable(self.ids_map_list, self.node_literal.token, current_pointer)
             return get_unary_prefix_op_code(self.token_operation, offset_to_ID)
@@ -175,10 +175,10 @@ class NodeUnaryPostfix(Node):
 
         # the token to apply on must be an ID
         if isinstance(self.node_literal, NodeToken) is False:
-            raise BFSemanticError("postfix operator %s can be applied to a variable only" % str(self.token_operation))
+            raise BFSemanticError("Postfix operator %s can only be applied to a variable" % str(self.token_operation))
 
         if self.node_literal.token.type != Token.ID:
-            raise BFSemanticError("postfix operator %s cannot be applied to %s, but to a variable only" % (str(self.token_operation), str(self.node_literal.token)))
+            raise BFSemanticError("Postfix operator %s cannot be applied to %s, but only to a variable" % (str(self.token_operation), str(self.node_literal.token)))
 
         offset_to_ID = get_offset_to_variable(self.ids_map_list, self.node_literal.token, current_pointer)
         return get_unary_postfix_op_code(self.token_operation, offset_to_ID)
