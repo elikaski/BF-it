@@ -29,6 +29,7 @@ def analyze(text):
         ('else', Token.ELSE),
         ('while', Token.WHILE),
         ('for', Token.FOR),
+        ('do', Token.DO),
         ('print', Token.PRINT),
         ('break', Token.BREAK),  # todo
         ('continue', Token.CONTINUE),  # todo

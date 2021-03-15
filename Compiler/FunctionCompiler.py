@@ -791,7 +791,7 @@ class FunctionCompiler:
 
         return code
 
-    def compile_while(self): #  while (expression) statement       note - statement can be scope { }
+    def compile_while(self):  # while (expression) statement       note - statement can be scope { }
         self.parser.check_next_tokens_are([Token.LPAREN])
         self.parser.advance_token(amount=2)  # skip to after LPAREN
 
@@ -808,7 +808,30 @@ class FunctionCompiler:
         code += inner_scope_code  # <while> scope code. after this code, pointer points to the next available cell. i.e one after the expression
         code += expression_code  # re-evaluate the expression
         code += "<"  # point to the expression
-        code += "]"  # after <if> scope
+        code += "]"  # after <while> scope
+
+        return code
+
+    def compile_do_while(self):  # do statement while (expression) semicolon      note - statement can be scope { }
+        self.parser.check_current_tokens_are([Token.DO])
+        self.parser.advance_token()
+
+        inner_scope_code = self.compile_statement()
+
+        self.parser.check_current_tokens_are([Token.WHILE, Token.LPAREN])
+        self.parser.advance_token(amount=2)  # point to after LPAREN
+
+        expression_code = self.compile_expression()
+
+        self.parser.check_current_tokens_are([Token.RPAREN, Token.SEMICOLON])
+        self.parser.advance_token(amount=2)  # point to after SEMICOLON
+
+        code = "[-]+"  # set expression to 1. since do while loops executes the scope code first.
+        code += "["  # go in scope
+        code += inner_scope_code  # <do-while> scope code. after this code, pointer points to the same cell. i.e the expression
+        code += expression_code  # evaluate the expression, after this code, the pointer is pointing to the next cell
+        code += "<"  # point to the expression
+        code += "]"  # after <do-while> scope
 
         return code
 
@@ -947,6 +970,9 @@ class FunctionCompiler:
 
         elif token.type == Token.WHILE:
             return self.compile_while()
+
+        elif token.type == Token.DO:
+            return self.compile_do_while()
 
         elif token.type == Token.RETURN:
             return self.compile_return()
