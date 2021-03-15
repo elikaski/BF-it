@@ -11,7 +11,7 @@ from .Token import Token
 
 """
 This file is responsible for creating FunctionCompiler objects and global variables objects
-And finally return the code of the main function
+And finally, return the code of the main function
 """
 
 
@@ -25,7 +25,7 @@ class Compiler:
         # returns function named tuple
 
         if self.parser.current_token().type not in [Token.VOID, Token.INT]:
-            raise BFSemanticError("Function return type can be either void or int, and not '%s'" % str(self.parser.current_token()))
+            raise BFSemanticError("Function return type can be either void or int, not '%s'" % str(self.parser.current_token()))
 
         self.parser.check_next_tokens_are([Token.ID, Token.LPAREN])
 
@@ -98,7 +98,7 @@ class Compiler:
         Iterate through all tokens
         When encountering function definition - create Function object and pass it the function's tokens
         When encountering global variable definition - create Variable object
-        Returns code that initializes global variables and advances pointer to after them
+        Returns code that initializes global variables and advances the pointer to after them
         """
         code = ''
         token = self.parser.current_token()

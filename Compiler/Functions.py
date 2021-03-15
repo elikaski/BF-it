@@ -12,7 +12,7 @@ def get_function_object(name):
     """
     must return a copy of the function
     because we might need to compile function recursively
-    and if we dont work on different copies then we will interfere with the current token pointer etc
+    and if we don't work on different copies then we will interfere with the current token pointer etc
 
     for example:
         int increase(int n) { return n+1;}
