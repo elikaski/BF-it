@@ -114,14 +114,14 @@ def get_set_cell_value_code(new_value, previous_value, zero_next_cell_if_necessa
     def get_abc(offset):
         # returns a,b,c such that a*b+c=offset and a+b+c is minimal
 
-        min_a, min_b, min_c = 0, 0, 0
+        min_a, min_b, min_c = offset, 1, 0
         min_sum = offset + 1
 
         left = 1
         right = offset // 2 - 1
 
         while right >= left:
-            a, b = left+1, right+1
+            a, b = left + 1, right + 1
             c = offset - a * b
             curr_sum = abs(a) + abs(b) + abs(c)
 
@@ -141,7 +141,7 @@ def get_set_cell_value_code(new_value, previous_value, zero_next_cell_if_necessa
     if zero_next_cell_if_necessary:
         looped += "[-]"  # zero it if necessary
     looped += "+" * a  # set loop counter
-    looped += "[-<" + char * abs(b) + ">]"  # sub 1 from counter, perform b actions
+    looped += "[<" + char * abs(b) + ">-]"  # sub 1 from counter, perform b actions
     looped += "<"  # point to "character" cell
     looped += get_char(-c if is_negative else c) * abs(c)  # c more actions
 
