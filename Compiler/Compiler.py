@@ -81,15 +81,17 @@ class Compiler:
             else:
                 raise BFSyntaxError("Unexpected %s in array definition. Expected SEMICOLON (;) or ASSIGN (=)" % self.parser.current_token())
 
-
         elif self.parser.current_token().type == Token.SEMICOLON:  # no need to initialize
             self.parser.advance_token()  # skip SEMICOLON
             code += '>'  # advance to after this variable
         else:
-            self.parser.check_current_tokens_are([Token.ASSIGN, Token.NUM, Token.SEMICOLON])
-            code += get_set_cell_value_code(get_NUM_token_value(self.parser.next_token()), 0, zero_next_cell_if_necessary=ZERO_CELLS_BEFORE_USE)
-            code += '>'  # advance to after this variable
-            self.parser.advance_token(amount=3)  # skip ASSIGN NUM SEMICOLON
+            self.parser.check_current_tokens_are([Token.ASSIGN])
+            self.parser.advance_token()  # skip ASSIGN
+
+            code += get_literal_token_code(self.parser.current_token())
+
+            self.parser.check_next_tokens_are([Token.SEMICOLON])
+            self.parser.advance_token(amount=2)  # skip (NUM|CHAR|TRUE|FALSE) SEMICOLON
 
         return code
 
