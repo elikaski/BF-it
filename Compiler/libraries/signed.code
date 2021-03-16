@@ -1,0 +1,56 @@
+// POSITIVE NEGATIVE
+//  0 - 127 128-255
+
+bool is_negative(int number) {
+    return number%% > 127;
+}
+
+bool is_positive(int number) {
+    return number%% < 128;
+}
+
+void print_signed(int number) {
+    if(is_negative(number)) {
+        printchar('-');
+        number = 0 - number%%;
+    }
+    printint(number%%);
+}
+
+bool signed_greater_than_equal(int a, int b) { // a >= b
+    // return_value can change after return statment
+    if(a == b) {
+        return true;
+    } else if(is_negative(a)) {
+        if(is_negative(b)) {
+            return (a%% > b%%);
+        } else {
+            return false;
+        }
+    } else if(is_negative(b)) {
+        return true;
+    } else {
+        return (a%% > b%%);
+    }
+}
+
+bool signed_greater_than(int a, int b) { // a > b
+    // return_value can change after return statment
+    if(a == b) {
+        return false;
+    } else if(is_negative(a)) {
+        if(is_negative(b)) {
+            return (a%% > b%%);
+        } else {
+            return false;
+        }
+    } else if(is_negative(b)) {
+        return true;
+    } else {
+        return (a%% > b%%);
+    }
+}
+
+int abs(int number) {
+    return 0 - number%%;
+}

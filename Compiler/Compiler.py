@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 from .Exceptions import BFSyntaxError, BFSemanticError
 from .FunctionCompiler import FunctionCompiler
 from .Functions import check_function_exists, get_function_object, insert_function_object
@@ -19,26 +20,31 @@ class Compiler:
     def __init__(self, code):
         self.parser = Parser(analyze(code))
 
+        self.included_files = []
+
     # global variables and functions
-    def create_function_object(self):
+    def create_function_object(self, parser=None):
         # function: (INT | VOID) ID LPAREN expression_list RPAREN LBRACE statements RBRACE
         # returns function named tuple
 
-        if self.parser.current_token().type not in [Token.VOID, Token.INT]:
+        if parser is None:
+            parser = self.parser
+
+        if parser.current_token().type not in [Token.VOID, Token.INT]:
             raise BFSemanticError("Function return type can be either void or int, not '%s'" % str(self.parser.current_token()))
 
-        self.parser.check_next_tokens_are([Token.ID, Token.LPAREN])
+        parser.check_next_tokens_are([Token.ID, Token.LPAREN])
 
         # save all tokens of this function
-        function_name = self.parser.next_token(next_amount=1).data
-        RPAREN_index = self.parser.find_matching(starting_index=self.parser.current_token_index+2)  # first find RPAREN
-        self.parser.check_next_tokens_are([Token.LBRACE], starting_index=RPAREN_index)
-        RBRACE_index = self.parser.find_matching(starting_index=RPAREN_index+1)  # then find RBRACE
+        function_name = parser.next_token(next_amount=1).data
+        RPAREN_index = parser.find_matching(starting_index=parser.current_token_index+2)  # first find RPAREN
+        parser.check_next_tokens_are([Token.LBRACE], starting_index=RPAREN_index)
+        RBRACE_index = parser.find_matching(starting_index=RPAREN_index+1)  # then find RBRACE
 
         # take all tokens between INT and RBRACE and pass them to function object
-        function_tokens = self.parser.tokens[self.parser.current_token_index:RBRACE_index+1]
+        function_tokens = parser.tokens[parser.current_token_index:RBRACE_index+1]
         # skip function definition
-        self.parser.advance_to_token_at_index(RBRACE_index+1)
+        parser.advance_to_token_at_index(RBRACE_index+1)
 
         function = FunctionCompiler(function_name, function_tokens)
         return function
@@ -104,7 +110,12 @@ class Compiler:
         """
         code = ''
         token = self.parser.current_token()
-        while token is not None and token.type in [Token.VOID, Token.INT]:
+        while token is not None and token.type in [Token.VOID, Token.INT, Token.INCLUDE_LOCAL_DIRECTIVE, Token.INCLUDE_LIB_DIRECTIVE]:
+            if token.type in [Token.INCLUDE_LIB_DIRECTIVE, Token.INCLUDE_LOCAL_DIRECTIVE]:
+                self.parser.advance_token(1)
+                token = self.parser.current_token()
+                continue
+
             self.parser.check_next_tokens_are([Token.ID])
 
             if self.parser.next_token(next_amount=2).type == Token.LPAREN:
@@ -123,7 +134,76 @@ class Compiler:
 
         return code
 
+    def process_external_functions(self, parser=None):
+        """
+        Iterate through all tokens
+        When encountering function definition - create Function object and pass it the function's tokens
+        """
+
+        if parser is None:
+            parser = self.parser
+
+        token = parser.current_token()
+        while token is not None and token.type in [Token.VOID, Token.INT, Token.INCLUDE_LOCAL_DIRECTIVE, Token.INCLUDE_LIB_DIRECTIVE]:
+            if token.type in [Token.INCLUDE_LIB_DIRECTIVE, Token.INCLUDE_LOCAL_DIRECTIVE]:
+                parser.advance_token(1)
+                token = parser.current_token()
+                continue
+
+            parser.check_next_tokens_are([Token.ID])
+
+            if parser.next_token(next_amount=2).type == Token.LPAREN:
+                function = self.create_function_object(parser=parser)
+                insert_function_object(function)
+            else:
+                raise BFSyntaxError("Unexpected '%s' after '%s'. Expected '(' (function definition)" % (str(self.parser.next_token(next_amount=2)), str(self.parser.next_token())))
+
+            token = parser.current_token()
+
+        if parser.current_token() is not None:  # we have not reached the last token
+            untouched_tokens = [str(t) for t in parser.tokens[parser.current_token_index:]]
+            raise BFSyntaxError("Did not reach the end of the code. Untouched tokens:\n%s" % untouched_tokens)
+
+    def parse_external_code(self, code, filename):
+        if filename in self.included_files:
+            return
+
+        self.included_files += [filename]
+        external_parser = Parser(analyze(code))
+
+        self.process_compiler_directives(parser=external_parser)
+        self.process_external_functions(parser=external_parser)
+
+    def process_compiler_directives(self, parser=None):
+        """
+        Iterate through all tokens
+        When encountering a compiler directive - Parse the file
+        """
+        if parser is None:
+            parser = self.parser
+
+        token = parser.current_token()
+        while token is not None:
+            if token.type in [Token.INCLUDE_LIB_DIRECTIVE, Token.INCLUDE_LOCAL_DIRECTIVE]:
+                filename = token.data[10:-1]
+                if token.type == Token.INCLUDE_LIB_DIRECTIVE:
+                    filename = os.path.join(os.path.dirname("./Compiler/libraries/"), filename)
+                else:
+                    # Todo: Make it get local files from where the code file is located
+                    filename = os.path.join(os.path.dirname("./"), filename)
+
+                with open(filename, "r") as f:
+                    code = f.read()
+
+                self.parse_external_code(code, filename)
+            parser.advance_token()
+            token = parser.current_token()
+
+        parser.advance_to_token_at_index(0)
+
     def compile(self):
+        self.process_compiler_directives()
+
         insert_library_functions()
         code = self.process_global_definitions()  # code that initializes global variables and advances pointer to after them
 

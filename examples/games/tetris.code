@@ -23,6 +23,8 @@
 
 /// TODO: Figure out a way to draw at -1 and -2 without signed numbers.
 
+#include <signed.code>
+
 char read_one_char() {
     // take the first char and ignore anything else, until reaching newline
     char res;
@@ -30,46 +32,6 @@ char read_one_char() {
         while(readchar() - '\n') {}
     }
     return res;
-}
-
-// POSITIVE NEGATIVE
-//  0 - 127 128-255
-
-bool is_negative(int number) {
-    return number > 127;
-}
-
-bool is_positive(int number) {
-    return number < 128;
-}
-
-void print_signed(int number) {
-    if(is_negative(number)) {
-        printchar('-');
-        number = 0 - number;
-    }
-    printint(number);
-}
-
-bool signed_greater_than_equal(int a, int b) { // a >= b
-    // return_value can change after return statment
-    if(a == b) {
-        return true;
-    } else {
-        if(is_negative(a)) {
-            if(is_negative(b)) {
-                return (a > b);
-            } else {
-                return false;
-            }
-        } else {
-            if(is_negative(b)) {
-                return true;
-            } else {
-                return (a > b);
-            }
-        }
-    }
 }
 
 void update_score() {
