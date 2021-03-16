@@ -173,7 +173,7 @@ class FunctionCompiler:
         # or array assignment: id = {1, 2, 3, ...};
         self.parser.check_current_tokens_are([Token.ASSIGN])
         if self.parser.current_token().data != "=":
-            raise BFSemanticError("Unexpected %s when assigning array. Expected ASSIGN (=)" % self.parser.current_token())
+            raise BFSyntaxError("Unexpected %s when assigning array. Expected ASSIGN (=)" % self.parser.current_token())
 
         assert self.parser.current_token().type == Token.ASSIGN and self.parser.current_token().data == "="
         self.parser.check_current_tokens_are([Token.ASSIGN, Token.LBRACE])

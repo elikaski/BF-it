@@ -86,7 +86,12 @@ class Compiler:
             code += '>'  # advance to after this variable
         else:
             self.parser.check_current_tokens_are([Token.ASSIGN])
+            if self.parser.current_token().data != "=":
+                raise BFSyntaxError("Unexpected %s when initializing global variable. Expected ASSIGN (=)" % self.parser.current_token())
             self.parser.advance_token()  # skip ASSIGN
+
+            if self.parser.current_token().type not in [Token.NUM, Token.CHAR, Token.TRUE, Token.FALSE]:
+                raise BFSemanticError("Unexpected '%s'. expected literal (NUM | CHAR | TRUE | FALSE )" % str(self.parser.current_token()))
 
             code += get_literal_token_code(self.parser.current_token())
 
@@ -104,7 +109,11 @@ class Compiler:
         """
         code = ''
         token = self.parser.current_token()
-        while token is not None and token.type in [Token.VOID, Token.INT]:
+        while token is not None and token.type in [Token.VOID, Token.INT, Token.SEMICOLON]:
+            if token.type == Token.SEMICOLON:  # can have random semicolons ;)
+                self.parser.advance_token()
+                token = self.parser.current_token()
+                continue
             self.parser.check_next_tokens_are([Token.ID])
 
             if self.parser.next_token(next_amount=2).type == Token.LPAREN:
