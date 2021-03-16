@@ -1,0 +1,34 @@
+int sqrt(int x) {
+    // Values allowed 0-225
+
+    if(x == 0) return 0; // Edge case
+    int y = 0; // The first value for which y*y>x (sqrt_ceil)
+    while(y*y < x) y++; // Find y
+    // What we need is y - (floor(x/y) != y) instead of y.
+    // This because y = sqrt_ceil(x).
+    // ceil(x/y) cleverly returns y - (floor(x/y) != y)
+    // This next algorithm returns ceil(x/y) for x and y > 0:
+    int t = x%% + y - 1; // Clever trick ((x+y-1)/y == ceil(x/y))
+
+    return t%% / y%%; // The square root
+}
+
+int pow(int a, int b) {
+    int res = 1;
+
+    while(b) {
+        res *= a;
+        b--;
+    }
+
+    return res%%;
+}
+
+int factorial(int x) {
+    // Values above 5 overflow
+    // Values above 9 returns 0
+
+    int result = 1;
+    for(int i = 1; i <= x; i++) result *= i;
+    return result%%;
+}
