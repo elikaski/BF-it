@@ -1,0 +1,76 @@
+int main() {
+    for(int i = 1; i != 6; i++) {
+        // Switch statements has cases.
+        // The case value can only be a literal.
+        switch(i) {
+            case 1:
+                print("A");
+                break;
+            case 2:
+                print("BB");
+                break;
+            case 3:
+                print("CCC");
+                break;
+            case 4:
+                print("DDDD");
+                break;
+            case 5:
+                print("EEEEE");
+                break;
+        }
+    }
+
+    print("\n\n");
+
+    for(int i = 1; i != 6; i++) {
+        // The case code doesn't need a break statement.
+        // If it doesn't have a break statement it continues into the next case code.
+        switch(i) {
+            case 1:
+                print("1");
+            case 2:
+                print("2");
+            case 3:
+                print("3");
+            case 4:
+                print("4");
+            case 5:
+                print("5");
+                break;
+        }
+        printchar('\n');
+    }
+
+    printchar('\n');
+
+    for(int i = 1; i != 6; i++) {
+        // The case code can also be empty.
+        // Then it just continues into the next case
+        switch(i) {
+            case 1:
+            case 2:
+                print("#");
+                break;
+            case 3:
+            case 4:
+                print("&");
+                break;
+            case 5:
+                print("%");
+                break;
+        }
+    }
+
+    printchar('\n');
+
+    switch(2) {
+        case 2: { // This has a scope, which means you can declare variables.
+            int hello = 5;
+            printchar(hello + '0');
+            break;
+        }
+    }
+
+    printchar('\n');
+}

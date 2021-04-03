@@ -3,6 +3,7 @@ from functools import reduce
 from .Exceptions import BFSyntaxError, BFSemanticError
 from .Functions import check_function_exists, get_function_object
 from .General import get_variable_dimensions_from_token, get_move_to_return_value_cell_code, get_print_string_code, get_variable_from_ID_token
+from .General import get_NUM_token_value, get_set_cell_value_code
 from .Globals import create_variable_from_definition, get_global_variables, get_variable_size, is_variable_array
 from .Node import NodeToken, NodeArraySetElement, NodeUnaryPrefix, NodeUnaryPostfix, NodeArrayGetElement, NodeFunctionCall, NodeArrayAssignment
 from .Parser import Parser
@@ -835,6 +836,147 @@ class FunctionCompiler:
 
         return code
 
+    def compile_switch(self):
+        # These flags are controlled by the compiler
+        # This means that the cases will be sorted to produce optimal code
+        SORTED_CASES = True
+        ALL_CASES_CONTAIN_BREAK = True
+
+        self.parser.check_next_tokens_are([Token.LPAREN])
+        self.parser.advance_token(amount=2)  # point to after LPAREN
+        expression_code = self.compile_expression()
+
+        code = expression_code
+        code += "[-]"  # else_bit = 0
+        code += "<[>+<-]"  # move expression value to next cell
+        code += "+"  # else_bit = 1
+        code += ">"  # point to value
+
+        self.parser.check_current_tokens_are([Token.RPAREN, Token.LBRACE])
+        self.parser.advance_token(amount=2)  # point to after LBRACE
+
+        cases = {}
+
+        self.increase_stack_pointer(amount=2)
+        current_token = self.parser.current_token()
+
+        # TODO: Make the break statement in if() scopes and such, work. It could maybe rewrite it as a series of ifs
+        # TODO: Implement default
+
+        while current_token.type == Token.CASE:
+            self.parser.advance_token()
+            constant_value_token = self.parser.current_token()
+            if constant_value_token.type not in [Token.TRUE, Token.FALSE, Token.NUM, Token.CHAR]:  # is not literal
+                raise BFSyntaxError("Switch case value is not a literal. Token is %s" % constant_value_token)
+
+            value = 0
+
+            if constant_value_token.type == Token.NUM:
+                value = get_NUM_token_value(constant_value_token)
+            elif constant_value_token.type == Token.CHAR:
+                value = ord(constant_value_token.data)
+            elif constant_value_token.type == Token.TRUE:
+                value = 1
+
+            if value in cases:
+                raise BFSemanticError("Case %d already exists. Token is %s" % (value, constant_value_token))
+
+            self.parser.check_next_tokens_are([Token.COLON])
+            self.parser.advance_token(amount=2)  # point to after COLON
+
+            # CASE literal COLON (LBRACE|statement+)?
+
+            is_in_scope = False
+            has_break = False
+            has_code = False
+
+            break_loop_at_tokens = [Token.CASE, Token.RBRACE]  # RBRACE is for the ending on the switch statement
+            inner_case_code = ""
+
+            if self.parser.current_token().type == Token.LBRACE:
+                is_in_scope = True
+                break_loop_at_tokens = [Token.RBRACE]
+                inner_case_code += self.enter_scope()
+            elif self.parser.current_token().type == Token.RBRACE:
+                raise BFSyntaxError("Empty case %d at end of switch. Token is %s" % (value, constant_value_token))
+
+            while self.parser.current_token().type not in break_loop_at_tokens:
+                if has_break:
+                    # Only compile the code before the break statement
+                    self.parser.advance_token()
+                    continue
+
+                if self.parser.current_token().type == Token.BREAK:
+                    self.parser.advance_token()  # skip BREAK
+                    has_break = True
+                else:
+                    inner_case_code += self.compile_statement(allow_declaration=is_in_scope)
+                    has_code = True
+
+            if not has_break:
+                ALL_CASES_CONTAIN_BREAK = False
+                SORTED_CASES = False
+
+            if is_in_scope:
+                inner_case_code += self.exit_scope()
+                self.parser.check_current_tokens_are([Token.RBRACE])
+                self.parser.advance_token()
+
+            cases[value] = (inner_case_code, has_break, has_code)
+            current_token = self.parser.current_token()
+
+        self.parser.advance_token()
+        self.decrease_stack_pointer(amount=2)
+
+        values = list(cases.keys())
+        if SORTED_CASES:
+            # Could maybe make it so that those that do not break flow are sorted
+            values.sort()  # Can sort since correct flow is not needed
+        if not ALL_CASES_CONTAIN_BREAK:
+            values = values[::-1]  # Reverse so that flow is correct
+
+        if len(values) == 0:
+            return expression_code + "<"
+
+        last_case_val = 0
+
+        for index, case in enumerate(values):
+            code += get_set_cell_value_code(-case, last_case_val)
+            last_case_val = -case
+
+            if index != len(values)-1:
+                code += "["
+
+        code += "[<->[-]]"  # else_bit = 0
+
+        for index, case in enumerate(values[::-1]):
+            scope_code, has_break, has_code = cases[case]
+            if has_break:
+                code += "<[>>"
+                code += scope_code
+                code += "<<-]>"
+            elif has_code:
+                code += "<[>>"
+                code += scope_code
+
+                # This generates a lot of code since it includes all cases until it hits a break
+                # Insert the code from all cases after the current until it hits break
+                for _case in values[::-1][index+1:]:
+                    _scope_code, _has_break, _has_code = cases[_case]
+                    code += _scope_code
+                    if _has_break:
+                        break
+                code += "<<-]>"
+
+            if index != len(values)-1:
+                code += "]"
+
+        code += "<"
+        return code
+
+    def compile_break(self):
+        raise NotImplementedError("Break statement found outside of switch case first scope.\nBreak is not currently implemented for while/for/do statements.\nToken is %s" % self.parser.current_token())
+
     def compile_for(self):
         # for (statement expression; expression) inner_scope_code   note: statement contains ;, and inner_scope_code can be scope { }
         # (the statement/second expression/inner_scope_code can be empty)
@@ -913,13 +1055,13 @@ class FunctionCompiler:
 
         return code
 
-    def compile_statement(self):
+    def compile_statement(self, allow_declaration=True):
         # returns code that performs the current statement
         # at the end, the pointer points to the same location it pointed before the statement was executed
 
         token = self.parser.current_token()
 
-        if token.type == Token.INT:  # INT ID ((= EXPRESSION) | ([NUM])+ (= ARRAY_INITIALIZATION)?)? SEMICOLON
+        if allow_declaration and token.type == Token.INT:  # INT ID ((= EXPRESSION) | ([NUM])+ (= ARRAY_INITIALIZATION)?)? SEMICOLON
             self.parser.check_next_tokens_are([Token.ID])
             self.parser.advance_token()  # skip "INT" (now points to ID)
             assert self.parser.current_token().type == Token.ID
@@ -973,6 +1115,12 @@ class FunctionCompiler:
 
         elif token.type == Token.DO:
             return self.compile_do_while()
+
+        elif token.type == Token.SWITCH:
+            return self.compile_switch()
+
+        elif token.type == Token.BREAK:
+            return self.compile_break()
 
         elif token.type == Token.RETURN:
             return self.compile_return()

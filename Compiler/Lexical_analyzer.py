@@ -31,8 +31,11 @@ def analyze(text):
         ('for', Token.FOR),
         ('do', Token.DO),
         ('print', Token.PRINT),
+        ('switch', Token.SWITCH),
+        ('case', Token.CASE),
         ('break', Token.BREAK),  # todo
         ('continue', Token.CONTINUE),  # todo
+        (':', Token.COLON),
         (';', Token.SEMICOLON),
         (',', Token.COMMA),
 
