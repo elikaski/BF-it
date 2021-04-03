@@ -2,7 +2,7 @@
 from .Exceptions import BFSyntaxError, BFSemanticError
 from .FunctionCompiler import FunctionCompiler
 from .Functions import check_function_exists, get_function_object, insert_function_object
-from .General import get_NUM_token_value, get_set_cell_value_code, get_literal_token_code, unpack_literal_tokens_to_array_dimensions
+from .General import is_token_literal, get_literal_token_code, unpack_literal_tokens_to_array_dimensions
 from .Globals import get_global_variables_size, get_variable_size, get_variable_dimensions, insert_global_variable, create_variable_from_definition
 from .Lexical_analyzer import analyze
 from .LibraryFunctionCompiler import insert_library_functions
@@ -90,7 +90,7 @@ class Compiler:
                 raise BFSyntaxError("Unexpected %s when initializing global variable. Expected ASSIGN (=)" % self.parser.current_token())
             self.parser.advance_token()  # skip ASSIGN
 
-            if self.parser.current_token().type not in [Token.NUM, Token.CHAR, Token.TRUE, Token.FALSE]:
+            if not is_token_literal(self.parser.current_token()):
                 raise BFSemanticError("Unexpected '%s'. expected literal (NUM | CHAR | TRUE | FALSE )" % str(self.parser.current_token()))
 
             code += get_literal_token_code(self.parser.current_token())

@@ -3,7 +3,7 @@ from .General import get_copy_from_variable_code, get_copy_to_variable_code
 from .General import get_move_left_index_cell_code, get_move_right_index_cells_code
 from .General import get_offset_to_variable, get_variable_dimensions_from_token
 from .General import get_op_between_literals_code, get_literal_token_code, get_token_ID_code
-from .General import get_unary_prefix_op_code, get_unary_postfix_op_code
+from .General import get_unary_prefix_op_code, get_unary_postfix_op_code, is_token_literal
 from .General import unpack_literal_tokens_to_array_dimensions
 from .Token import Token
 
@@ -52,7 +52,7 @@ class NodeToken(Node):
     def get_code(self, current_pointer, *args, **kwargs):
         # returns the code that evaluates the parse tree
 
-        if self.token.type in [Token.NUM, Token.CHAR, Token.ID, Token.TRUE, Token.FALSE]:
+        if is_token_literal(self.token) or self.token.type == Token.ID:
             # its a literal (leaf)
             assert self.left is None and self.right is None
             if self.token.type == Token.ID:

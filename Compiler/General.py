@@ -190,20 +190,8 @@ def get_token_ID_code(ids_map_list, token, current_pointer):
 
 def get_literal_token_code(token):
     # generate code that evaluates the token at the current pointer, and sets the pointer to point to the next available cell
-    if token.type == Token.NUM:
-        value = get_NUM_token_value(token)
-        code = "[-]"  # zero current cell
-        code += get_set_cell_value_code(value, 0)  # set current cell to the num value
-        code += ">"  # point to the next cell
-        return code
-
-    elif token.type == Token.CHAR:
-        code = "[-]"  # zero current cell
-        code += get_set_cell_value_code(ord(token.data), 0)  # set current cell to the char value
-        code += ">"  # point to next cell
-        return code
-
-    elif token.type == Token.TRUE:
+    assert is_token_literal(token)
+    if token.type == Token.TRUE:
         code = "[-]"  # zero current cell
         code += "+"  # current cell = 1
         code += ">"  # point to next cell
@@ -214,7 +202,12 @@ def get_literal_token_code(token):
         code += ">"  # point to next cell
         return code
 
-    raise NotImplementedError("Not implemented %s" % token)
+    else:
+        value = get_literal_token_value(token)
+        code = "[-]"  # zero current cell
+        code += get_set_cell_value_code(value, 0)  # set current cell to the value
+        code += ">"  # point to the next cell
+        return code
 
 
 def get_divmod_code(right_token=None):
@@ -1063,6 +1056,19 @@ def get_move_left_index_cell_code():
 #     General
 # =================
 
+def get_literal_token_value(token):
+    # known at compilation time
+    assert is_token_literal(token)
+    if token.type == Token.NUM:
+        return get_NUM_token_value(token)
+    elif token.type == Token.TRUE:
+        return 1
+    elif token.type == Token.FALSE:
+        return 0
+    elif token.type == Token.CHAR:
+        return ord(token.data)
+
+
 def get_NUM_token_value(token):
     if token.data.startswith("0x"):
         return int(token.data, 16)
@@ -1097,3 +1103,8 @@ def get_id_index(ids_map_list, ID_token):
 def get_offset_to_variable(ids_map_list, ID_token, current_pointer):
     offset = current_pointer - get_id_index(ids_map_list, ID_token)
     return offset
+
+
+def is_token_literal(token):
+    # token with value that is known at compilation time
+    return token.type in [Token.TRUE, Token.FALSE, Token.NUM, Token.CHAR]

@@ -3,7 +3,7 @@ from functools import reduce
 from .Exceptions import BFSyntaxError, BFSemanticError
 from .Functions import check_function_exists, get_function_object
 from .General import get_variable_dimensions_from_token, get_move_to_return_value_cell_code, get_print_string_code, get_variable_from_ID_token
-from .General import get_NUM_token_value, get_set_cell_value_code
+from .General import get_literal_token_value, get_set_cell_value_code, is_token_literal
 from .Globals import create_variable_from_definition, get_global_variables, get_variable_size, is_variable_array
 from .Node import NodeToken, NodeArraySetElement, NodeUnaryPrefix, NodeUnaryPostfix, NodeArrayGetElement, NodeFunctionCall, NodeArrayAssignment
 from .Parser import Parser
@@ -346,7 +346,7 @@ class FunctionCompiler:
             index_expression = self.get_array_index_expression()
             return NodeArrayGetElement(self.ids_map_list[:], token, index_expression)
 
-        if token.type in [Token.NUM, Token.CHAR, Token.ID, Token.TRUE, Token.FALSE]:
+        if is_token_literal(token) or token.type == Token.ID:
             self.parser.advance_token()
             return NodeToken(self.ids_map_list[:], token=token)
 
@@ -866,18 +866,10 @@ class FunctionCompiler:
         while current_token.type == Token.CASE:
             self.parser.advance_token()
             constant_value_token = self.parser.current_token()
-            if constant_value_token.type not in [Token.TRUE, Token.FALSE, Token.NUM, Token.CHAR]:  # is not literal
-                raise BFSyntaxError("Switch case value is not a literal. Token is %s" % constant_value_token)
+            if not is_token_literal(constant_value_token):
+                raise BFSemanticError("Switch case value is not a literal. Token is %s" % constant_value_token)
 
-            value = 0
-
-            if constant_value_token.type == Token.NUM:
-                value = get_NUM_token_value(constant_value_token)
-            elif constant_value_token.type == Token.CHAR:
-                value = ord(constant_value_token.data)
-            elif constant_value_token.type == Token.TRUE:
-                value = 1
-
+            value = get_literal_token_value(constant_value_token)
             if value in cases:
                 raise BFSemanticError("Case %d already exists. Token is %s" % (value, constant_value_token))
 
@@ -925,6 +917,9 @@ class FunctionCompiler:
             cases[value] = (inner_case_code, has_break, has_code)
             current_token = self.parser.current_token()
 
+        if self.parser.current_token().type not in [Token.RBRACE, Token.CASE]:
+            raise BFSyntaxError("Unexpected '%s' in switch-case. Expected case or RBRACE (})" % self.parser.current_token())
+        self.parser.check_current_tokens_are([Token.RBRACE])
         self.parser.advance_token()
         self.decrease_stack_pointer(amount=2)
 
