@@ -3,9 +3,12 @@ from functools import reduce
 from .Exceptions import BFSyntaxError, BFSemanticError
 from .Functions import check_function_exists, get_function_object
 from .General import get_variable_dimensions_from_token, get_move_to_return_value_cell_code, get_print_string_code, get_variable_from_ID_token
+from .General import get_variable_size_from_token
 from .Globals import create_variable_from_definition, get_global_variables, get_variable_size, is_variable_array
 from .Node import NodeToken, NodeArraySetElement, NodeUnaryPrefix, NodeUnaryPostfix, NodeArrayGetElement, NodeFunctionCall, NodeArrayAssignment
+from .Node import NodeStructGetField, NodeStructSetField
 from .Parser import Parser
+from .Structs import get_struct_from_id_token, check_if_struct_name_exists, get_struct_object
 from .Token import Token
 
 """
@@ -95,7 +98,7 @@ class FunctionCompiler:
         for variable in get_global_variables():
             self.insert_to_ids_map(variable)
 
-    def get_array_index_expression(self):
+    def get_array_index_expression(self, struct_object=None):
         """
         the idea - address the multi-dimensional array as a one-dimensional array
         calculate the appropriate index in the one-dimensional array
@@ -108,16 +111,22 @@ class FunctionCompiler:
         e.g if the array is: arr[10][5][2] and we want to get arr[4][3][1]
         then we want to calculate index = (4*(5*2) + 3*(2) + 1)
         """
+        is_struct_field = struct_object is not None
+
         ID_token = self.parser.current_token()
         self.parser.advance_token(2)  # skip ID, LBRACK
         first_index_expression = index_expression = self.expression()  # first dimension
         self.parser.check_current_tokens_are([Token.RBRACK])
         self.parser.advance_token()  # skip RBRACK
 
+        multiply_token = Token(Token.BINOP, ID_token.line, ID_token.column, data="*")
+
         # now handle the next dimensions (if multi-dimensional array)
-        dimensions = get_variable_dimensions_from_token(self.ids_map_list, ID_token)
+        if is_struct_field:
+            dimensions = struct_object.get_field_dimensions(ID_token.data)
+        else:
+            dimensions = get_variable_dimensions_from_token(self.ids_map_list, ID_token)
         if len(dimensions) > 1:
-            multiply_token = Token(Token.BINOP, ID_token.line, ID_token.column, data="*")
             add_token = Token(Token.BINOP, ID_token.line, ID_token.column, data="+")
 
             # multiply by next dimensions sizes
@@ -155,16 +164,31 @@ class FunctionCompiler:
         if self.parser.current_token().type == Token.LBRACK:  # too many indexes given...
             raise BFSemanticError("%s is a %s-dimensional array. Unexpected %s" %
                                   (str(ID_token), len(dimensions), self.parser.current_token()))
+
+        if is_struct_field:
+            size = struct_object.get_field_size(ID_token.data)
+        else:
+            size = get_variable_size_from_token(self.ids_map_list, ID_token)
+
+        if size > 1:
+            node_token_multiply_size = NodeToken(self.ids_map_list[:], token=Token(Token.NUM, ID_token.line, ID_token.column, data=str(size)))
+            index_expression = NodeToken(self.ids_map_list[:], token=multiply_token, left=node_token_multiply_size, right=index_expression)
+
         return index_expression
 
-    def get_token_after_array_access(self):
+    def get_index_after_array_access(self, offset=0):
         # in case we have: "ID[a][b][c]...[z] next_token", return "next_token"
-        self.parser.check_current_tokens_are([Token.ID, Token.LBRACK])
-        idx = self.parser.current_token_index + 1  # point to LBRACK
+        idx = self.parser.current_token_index + offset
+        self.parser.check_next_tokens_are([Token.ID, Token.LBRACK], starting_index=idx - 1)
+        idx += 1  # point to LBRACK
         while self.parser.token_at_index(idx).type == Token.LBRACK:
             idx = self.parser.find_matching(idx)  # point to RBRACK
             idx += 1  # advance to one after the RBRACK
 
+        return idx
+
+    def get_token_after_array_access(self, offset=0):
+        idx = self.get_index_after_array_access(offset)
         return self.parser.token_at_index(idx)
 
     def compile_array_assignment(self, token_id):
@@ -265,6 +289,10 @@ class FunctionCompiler:
                     variable = create_variable_from_definition(self.parser, index=i)
                     self.insert_to_ids_map(variable)
 
+            elif token.type == Token.STRUCT:
+                variable = create_variable_from_definition(self.parser, index=i)
+                self.insert_to_ids_map(variable)
+
             elif token.type == Token.LBRACE:
                 i = self.parser.find_matching(starting_index=i)
 
@@ -338,12 +366,55 @@ class FunctionCompiler:
 
         token = self.parser.current_token()
 
+        if token.type == Token.SIZEOF and self.parser.next_token().type == Token.LPAREN:
+            self.parser.check_next_tokens_are([Token.LPAREN])
+            self.parser.advance_token(amount=2)  # point to after LPAREN
+            param = self.parser.current_token()
+            if param.type == Token.ID:
+                if check_if_struct_name_exists(param.data):
+                    size = get_struct_object(param.data).size
+                else:
+                    variable = get_variable_from_ID_token(self.ids_map_list, param)
+                    size = get_variable_size(variable)
+            elif param.type == Token.RPAREN:
+                raise BFSyntaxError("Expected ID in '%s', got nothing" % token)
+            else:
+                raise NotImplementedError()
+
+            self.parser.check_next_tokens_are([Token.RPAREN])
+            self.parser.advance_token(2)
+
+            num = Token(Token.NUM, token.line, token.column, data=str(size))
+            node = NodeToken(self.ids_map_list[:], token=num)
+
+            return node
+
         if token.type == Token.ID and self.parser.next_token().type == Token.LPAREN:
             return self.function_call()
 
         if token.type == Token.ID and self.parser.next_token().type == Token.LBRACK:  # array - ID(LBRACK expression RBRACK)+
             index_expression = self.get_array_index_expression()
-            return NodeArrayGetElement(self.ids_map_list[:], token, index_expression)
+            field_name = None
+
+            if self.parser.current_token().type == Token.DOT:
+                field_name = self.parser.next_token().data
+                self.parser.advance_token(amount=2)
+
+            return NodeArrayGetElement(self.ids_map_list[:], token, index_expression, struct_field=field_name)
+
+        if token.type in Token.ID and self.parser.next_token().type == Token.DOT:
+            self.parser.check_next_tokens_are([Token.DOT, Token.ID])
+            self.parser.advance_token(amount=2)  # point to ID
+            field_name = self.parser.current_token().data
+
+            if self.parser.next_token().type == Token.LBRACK:
+                struct_object = get_struct_from_id_token(self.ids_map_list, token)
+                index_expression = self.get_array_index_expression(struct_object)
+                return NodeArrayGetElement(self.ids_map_list[:], token, index_expression, struct_field=field_name)
+
+            self.parser.advance_token()
+
+            return NodeStructGetField(self.ids_map_list[:], token, field_name)
 
         if token.type in [Token.NUM, Token.CHAR, Token.ID, Token.TRUE, Token.FALSE]:
             self.parser.advance_token()
@@ -551,7 +622,6 @@ class FunctionCompiler:
         # assignment: ID ASSIGN expression | ID ASSIGN ARRAY_INITIALIZATION | ID (LBRACK expression RBRACK)+ ASSIGN expression | logical_or
 
         if self.parser.current_token().type == Token.ID and self.parser.next_token().type == Token.ASSIGN:
-
             if self.parser.next_token(2).type == Token.LBRACE:  # ID ASSIGN ARRAY_INITIALIZATION
                 token_ID = self.parser.current_token()
                 self.parser.advance_token()  # skip ID
@@ -569,6 +639,65 @@ class FunctionCompiler:
 
             new_node = NodeToken(self.ids_map_list[:], left=NodeToken(self.ids_map_list[:], token=id_token), token=assign_token, right=expression_node)
             return new_node
+
+        elif self.parser.current_token().type == Token.ID and self.parser.next_token().type == Token.DOT and self.parser.next_token(2).type == Token.ID and self.parser.next_token(3).type == Token.ASSIGN:
+            id_token = self.parser.current_token()
+            field_token = self.parser.next_token(2)
+            field_name = field_token.data
+            assign_token = self.parser.next_token(3)
+            self.parser.advance_token(amount=3)  # skip ID DOT ID ASSIGN
+
+            if self.parser.next_token().type == Token.LBRACE:  # ID DOT ID ASSIGN ARRAY_INITIALIZATION
+                raise NotImplementedError("Array Initialization is not currently implemented for fields")
+                # struct_object = get_struct_from_id_token(self.ids_map_list, id_token)
+                # if not struct_object.is_field_array(field_name):
+                #     raise BFSemanticError("Trying to assign array to non-array field %s" % field_token)
+                # return self.compile_array_assignment(id_token)
+
+            self.parser.advance_token()
+
+            # ID DOT ID ASSIGN expression
+
+            expression_node = self.expression()
+            return NodeStructSetField(self.ids_map_list[:], id_token, field_name, assign_token, expression_node)
+
+        elif self.parser.current_token().type == Token.ID and self.parser.next_token().type == Token.DOT and self.parser.next_token(2).type == Token.ID and self.parser.next_token(3).type == Token.LBRACK and \
+                self.get_token_after_array_access(offset=2).type == Token.ASSIGN:
+            # ID DOT ID (LBRACK expression RBRACK)+ ASSIGN value_expression
+            id_token = self.parser.current_token()
+            field_name = self.parser.next_token(2).data
+            self.parser.advance_token(amount=2)  # point to ID (field_name)
+
+            struct_object = get_struct_from_id_token(self.ids_map_list, id_token)
+
+            index_expression = self.get_array_index_expression(struct_object)
+            self.parser.check_current_tokens_are([Token.ASSIGN])
+
+            assign_token = self.parser.current_token()
+            self.parser.advance_token()  # skip ASSIGN
+            value_expression = self.expression()
+
+            return NodeArraySetElement(self.ids_map_list[:], id_token, index_expression, assign_token, value_expression, struct_field=field_name)
+
+        elif (self.parser.current_token().type == Token.ID and
+              self.parser.next_token().type == Token.LBRACK and
+              self.get_token_after_array_access().type == Token.DOT and
+              self.parser.token_at_index(self.get_index_after_array_access() + 1).type == Token.ID and
+              self.parser.token_at_index(self.get_index_after_array_access() + 2).type == Token.ASSIGN
+              ):
+            # ID (LBRACK expression RBRACK)+ DOT ID ASSIGN value_expression
+            id_token = self.parser.current_token()
+            index_expression = self.get_array_index_expression()
+            self.parser.check_current_tokens_are([Token.DOT])
+            field_name = self.parser.next_token().data
+
+            self.parser.advance_token(amount=2)
+            self.parser.check_current_tokens_are([Token.ASSIGN])
+            assign_token = self.parser.current_token()
+            self.parser.advance_token()  # skip ASSIGN
+            value_expression = self.expression()
+
+            return NodeArraySetElement(self.ids_map_list[:], id_token, index_expression, assign_token, value_expression, struct_field=field_name)
 
         elif self.parser.current_token().type == Token.ID and self.parser.next_token().type == Token.LBRACK and \
                 self.get_token_after_array_access().type == Token.ASSIGN:
@@ -952,12 +1081,32 @@ class FunctionCompiler:
             return self.compile_expression_as_statement()
 
         elif token.type == Token.ID:
-            if self.parser.next_token().type in [Token.ASSIGN, Token.LBRACK, Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE]:
+            if self.parser.next_token().type == Token.DOT:
+                if self.parser.next_token(next_amount=3).type in [Token.ASSIGN, Token.LBRACK, Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE]:
+                    # ID ASSIGN expression; or ID DOT ID([expression])+ ASSIGN expression; or ID DOT ID++;
+                    return self.compile_expression_as_statement()
+            elif self.parser.next_token().type in [Token.ASSIGN, Token.LBRACK, Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE]:
                 # ID ASSIGN expression; or ID([expression])+ ASSIGN expression; or ID++;
                 return self.compile_expression_as_statement()
             elif self.parser.next_token().type == Token.LPAREN:  # ID(...);  (function call)
                 return self.compile_function_call_statement()
             raise BFSyntaxError("Unexpected '%s' after '%s'. Expected '=|+=|-=|*=|/=|%%=|<<=|>>=|&=|(|=)|^=' (assignment), '++|--' (modification) or '(' (function call)" % (str(self.parser.next_token()), str(token)))
+
+        elif token.type == Token.STRUCT:
+            # STRUCT ID ID SEMICOLON
+            self.parser.check_next_tokens_are([Token.ID, Token.ID])
+            struct_id_token = self.parser.next_token()
+            variable_name = self.parser.next_token(2)
+            self.parser.advance_token(amount=3)
+
+            if self.parser.current_token().type == Token.LBRACK:
+                while self.parser.current_token().type == Token.LBRACK:  # loop to skip to after last RBRACK ]
+                    self.parser.check_current_tokens_are([Token.LBRACK, Token.NUM, Token.RBRACK])
+                    self.parser.advance_token(3)
+
+            self.parser.check_current_tokens_are([Token.SEMICOLON])
+            self.parser.advance_token()  # point to after SEMICOLON
+            return ''  # no code is generated here. code was generated for defining this variable when we entered the scope
 
         elif token.type == Token.PRINT:  # print(string);
             return self.compile_print_string()
