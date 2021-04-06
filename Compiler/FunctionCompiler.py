@@ -871,6 +871,9 @@ class FunctionCompiler:
             manually_inserted_variable_in_for_definition = True
             code += ">" * get_variable_size(variable)
 
+            if self.parser.next_token(2).type != Token.ASSIGN:
+                print("[Warning] For loop variable '%s' isn't assigned to anything and may cause side effects" % self.parser.next_token())
+
         if self.parser.current_token().type == Token.LBRACE:  # statement is a scope
             raise BFSyntaxError("Unexpected scope inside for loop statement - %s" % self.parser.current_token())
         initial_statement = self.compile_statement()
