@@ -68,8 +68,8 @@ int main() {
         case 2: { // This has a scope, which means you can declare variables.
             int hello = 5;
             printchar(hello + '0');
-            break;
         }
+        break;
     }
 
     printchar('\n');

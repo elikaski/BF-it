@@ -836,35 +836,22 @@ class FunctionCompiler:
 
         return code
 
-    def compile_switch(self):
-        # These flags are controlled by the compiler
-        # This means that the cases will be sorted to produce optimal code
-        SORTED_CASES = True
-        ALL_CASES_CONTAIN_BREAK = True
-
-        self.parser.check_next_tokens_are([Token.LPAREN])
+    def compile_switch(self):  # switch (expression) { (case literal: statements*)* }
+        self.parser.check_current_tokens_are([Token.SWITCH, Token.LPAREN])
         self.parser.advance_token(amount=2)  # point to after LPAREN
+
+        self.increase_stack_pointer()  # use 1 temp cell before evaluating the expression
         expression_code = self.compile_expression()
-
-        code = expression_code
-        code += "[-]"  # else_bit = 0
-        code += "<[>+<-]"  # move expression value to next cell
-        code += "+"  # else_bit = 1
-        code += ">"  # point to value
-
         self.parser.check_current_tokens_are([Token.RPAREN, Token.LBRACE])
         self.parser.advance_token(amount=2)  # point to after LBRACE
 
-        cases = {}
+        self.increase_stack_pointer()  # use 1 additional temp cell for indicating we need to execute a case
+        cases = {}  # ordered dictionary of value --> tuple (case_code (string), has_break (bool))
 
-        self.increase_stack_pointer(amount=2)
-        current_token = self.parser.current_token()
-
-        # TODO: Make the break statement in if() scopes and such, work. It could maybe rewrite it as a series of ifs
         # TODO: Implement default
 
-        while current_token.type == Token.CASE:
-            self.parser.advance_token()
+        while self.parser.current_token().type == Token.CASE:  # CASE literal COLON statement*
+            self.parser.advance_token()  # skip CASE
             constant_value_token = self.parser.current_token()
             if not is_token_literal(constant_value_token):
                 raise BFSemanticError("Switch case value is not a literal. Token is %s" % constant_value_token)
@@ -876,100 +863,131 @@ class FunctionCompiler:
             self.parser.check_next_tokens_are([Token.COLON])
             self.parser.advance_token(amount=2)  # point to after COLON
 
-            # CASE literal COLON (LBRACE|statement+)?
-
-            is_in_scope = False
-            has_break = False
-            has_code = False
-
-            break_loop_at_tokens = [Token.CASE, Token.RBRACE]  # RBRACE is for the ending on the switch statement
             inner_case_code = ""
+            while self.parser.current_token().type not in [Token.CASE, Token.RBRACE, Token.BREAK]:
+                inner_case_code += self.compile_statement(allow_declaration=False)  # not allowed to declare variables directly inside case
 
-            if self.parser.current_token().type == Token.LBRACE:
-                is_in_scope = True
-                break_loop_at_tokens = [Token.RBRACE]
-                inner_case_code += self.enter_scope()
-            elif self.parser.current_token().type == Token.RBRACE:
-                raise BFSyntaxError("Empty case %d at end of switch. Token is %s" % (value, constant_value_token))
+            has_break = False
+            if self.parser.current_token().type == Token.BREAK:  # ignore all statements after break
+                self.parser.check_next_tokens_are([Token.SEMICOLON])
+                self.parser.advance_token(amount=2)  # skip break SEMICOLON
+                has_break = True
+                while self.parser.current_token().type not in [Token.CASE, Token.RBRACE]:
+                    self.compile_statement()  # advance the parser and discard the code
+            cases[value] = (inner_case_code, has_break)
 
-            while self.parser.current_token().type not in break_loop_at_tokens:
-                if has_break:
-                    # Only compile the code before the break statement
-                    self.parser.advance_token()
-                    continue
-
-                if self.parser.current_token().type == Token.BREAK:
-                    self.parser.advance_token()  # skip BREAK
-                    has_break = True
-                else:
-                    inner_case_code += self.compile_statement(allow_declaration=is_in_scope)
-                    has_code = True
-
-            if not has_break:
-                ALL_CASES_CONTAIN_BREAK = False
-                SORTED_CASES = False
-
-            if is_in_scope:
-                inner_case_code += self.exit_scope()
-                self.parser.check_current_tokens_are([Token.RBRACE])
-                self.parser.advance_token()
-
-            cases[value] = (inner_case_code, has_break, has_code)
-            current_token = self.parser.current_token()
-
-        if self.parser.current_token().type not in [Token.RBRACE, Token.CASE]:
-            raise BFSyntaxError("Unexpected '%s' in switch-case. Expected case or RBRACE (})" % self.parser.current_token())
         self.parser.check_current_tokens_are([Token.RBRACE])
         self.parser.advance_token()
         self.decrease_stack_pointer(amount=2)
 
+        return self.process_cases(expression_code, cases)
+
+    def process_cases(self, expression_code, cases):  # todo move to general
+        if len(cases) == 0:
+            code = ">"  # point to next cell
+            code += expression_code  # evaluate expression
+            code += "<"  # point to expression
+            code += "<"  # discard result
+            return code
+
+        all_cases_have_break = all(case[1] for case in cases.values())
+
+        has_default = False  # todo .........
+        default_code = "[-]" + "+" * ord("X") + "......"  # (print X a few times) - todo .........
+
+        # using 2 temp cells: need_to_execute, expression_value
+        # need_to_execute - initialized with 1, zeroed if running any case. indicating we should execute code for one of the cases
+        # expression_value - initialized with expression's value, this is what we compare our cases' values to
+
+        code = "[-]+"  # need_to_execute = 1
+        code += ">"  # point to next cell
+        code += expression_code  # evaluate expression
+        code += "<"  # point to expression
+
         values = list(cases.keys())
-        if SORTED_CASES:
-            # Could maybe make it so that those that do not break flow are sorted
+        if all_cases_have_break:  # small optimization for evaluating the expression
             values.sort()  # Can sort since correct flow is not needed
-        if not ALL_CASES_CONTAIN_BREAK:
+        else:
             values = values[::-1]  # Reverse so that flow is correct
 
-        if len(values) == 0:
-            return expression_code + "<"
+        """
+            This loop compares the expression value to each case in the switch-case statement, in reverse order
+            It does so by increasing and decreasing expression, and comparing result to 0
+            E.G. if we have 
+                switch(x) {
+                    case 2:
+                    case 0:
+                    case 5: 
+                    case 1:
+                }
+            x will be put in <expression> cell, then:
+            Iteration 1 will "increase" <expression> cell by -1 (0-1) (comparing x with 1)
+            Iteration 2 will "increase" <expression> cell by -4 (1-5) (comparing x with 5)
+            Iteration 3 will increase   <expression> cell by +5 (5-0) (comparing x with 0)
+            Iteration 4 will "increase" <expression> cell by -2 (0-2) (comparing x with 2)
+        """
 
+        # at this point, we point to expression_value cell
         last_case_val = 0
-
         for index, case in enumerate(values):
             code += get_set_cell_value_code(-case, last_case_val)
             last_case_val = -case
+            code += "["  # "if zero then jump to matching code part"
 
-            if index != len(values)-1:
-                code += "["
+        """
+        Then we add each case's code in the correct order:
+        <need_to_execute=1>
+        <compare_with_1>    [
+        <compare_with_5>        [
+        <compare_with_0>            [ 
+        <compare_with_2>                [
+                                            <default_code> <expression_value=0> <need_to_execute=0>
+                                        ]   <if need_to_execute> <code_for_2> <need_to_execute=0>
+                                    ]       <if need_to_execute> <code_for_0> <need_to_execute=0>
+                                ]           <if need_to_execute> <code_for_5> <need_to_execute=0>
+                            ]               <if need_to_execute> <code_for_1> <need_to_execute=0>
+    
+        notice each case uses the next case's ']' sign to return to the comparisons block
+        for example, the '[' in case 5 line uses the ']' of case 1 code to "return" to the comparisons
+        this is because there is no way to "skip" code
+        """
 
-        code += "[<->[-]]"  # else_bit = 0
+        # This code will execute after all the comparisons are done and non of the cases executed
+        if has_default:
+            code += ">"  # point to next available cell for running the "default" code
+            code += default_code
+            code += "<"  # point to expression_value
+        code += "<-"    # need_to_execute = 0
+        code += ">[-]"  # expression_value = 0. When going back to last comparison, it will be 0, so we skip the default
+        code += "]"     # "jump back address" of the last comparison
 
-        for index, case in enumerate(values[::-1]):
-            scope_code, has_break, has_code = cases[case]
-            if has_break:
-                code += "<[>>"
+        # Add all the cases code
+        for case_index in range(len(values)):
+            code += "<"   # point to need_to_execute
+            code += "["   # if its non-zero (i.e need to execute the code for this case)
+            code += ">>"  # point to next available cell for running the code
+
+            # Insert the code from this case and all cases after the current until reaching break
+            # This generates a lot of code since each case includes all following cases until reaching break
+            for case in values[::-1][case_index:]:
+                scope_code, has_break = cases[case]
                 code += scope_code
-                code += "<<-]>"
-            elif has_code:
-                code += "<[>>"
-                code += scope_code
+                if has_break:
+                    break
+            code += "<<"  # point to need_to_execute
+            code += "-"   # need_to_execute=0
+            code += "]"   # # end if
+            code += ">"   # point to expression_value
 
-                # This generates a lot of code since it includes all cases until it hits a break
-                # Insert the code from all cases after the current until it hits break
-                for _case in values[::-1][index+1:]:
-                    _scope_code, _has_break, _has_code = cases[_case]
-                    code += _scope_code
-                    if _has_break:
-                        break
-                code += "<<-]>"
+            if case_index != len(values)-1:  # the last case has no "jump back"
+                code += "]"  # "jump back address" of the comparison before us
 
-            if index != len(values)-1:
-                code += "]"
-
-        code += "<"
+        # end of the switch-case
+        code += "<"  # point to need_to_execute, which becomes next available cell
         return code
 
     def compile_break(self):
+        # TODO: Make the break statement in scopes inside switch-case (including if/else), and for/do/while
         raise NotImplementedError("Break statement found outside of switch case first scope.\nBreak is not currently implemented for while/for/do statements.\nToken is %s" % self.parser.current_token())
 
     def compile_for(self):
@@ -1055,8 +1073,11 @@ class FunctionCompiler:
         # at the end, the pointer points to the same location it pointed before the statement was executed
 
         token = self.parser.current_token()
+        if token.type == Token.INT:  # INT ID ((= EXPRESSION) | ([NUM])+ (= ARRAY_INITIALIZATION)?)? SEMICOLON
+            if not allow_declaration:
+                raise BFSemanticError("Cannot define variable (%s) directly inside case. "
+                                      "Can define inside new scope {} or outside the switch statement" % token)
 
-        if allow_declaration and token.type == Token.INT:  # INT ID ((= EXPRESSION) | ([NUM])+ (= ARRAY_INITIALIZATION)?)? SEMICOLON
             self.parser.check_next_tokens_are([Token.ID])
             self.parser.advance_token()  # skip "INT" (now points to ID)
             assert self.parser.current_token().type == Token.ID
