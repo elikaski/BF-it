@@ -397,8 +397,21 @@ class FunctionCompiler:
             field_name = None
 
             if self.parser.current_token().type == Token.DOT:
+                # ID (LBRACK expression RBRACK)+ DOT ID
+                self.parser.check_next_tokens_are([Token.ID])
                 field_name = self.parser.next_token().data
-                self.parser.advance_token(amount=2)
+                self.parser.advance_token()  # point to ID (field_name)
+
+                if self.parser.next_token().type == Token.LBRACK:
+                    # ID (LBRACK expression RBRACK)+ DOT ID (LBRACK expression RBRACK)+
+                    struct_object = get_struct_from_id_token(self.ids_map_list, token)
+                    field_index_expression = self.get_array_index_expression(struct_object)
+
+                    # Adds the offset to the struct in the array then it adds the offset to the field
+                    add_token = Token(Token.BINOP, token.line, token.column, data="+")
+                    index_expression = NodeToken(self.ids_map_list[:], token=add_token, left=index_expression, right=field_index_expression)
+                else:
+                    self.parser.advance_token()  # point to after ID
 
             return NodeArrayGetElement(self.ids_map_list[:], token, index_expression, struct_field=field_name)
 
@@ -408,6 +421,7 @@ class FunctionCompiler:
             field_name = self.parser.current_token().data
 
             if self.parser.next_token().type == Token.LBRACK:
+                # ID DOT ID (LBRACK expression RBRACK)+
                 struct_object = get_struct_from_id_token(self.ids_map_list, token)
                 index_expression = self.get_array_index_expression(struct_object)
                 return NodeArrayGetElement(self.ids_map_list[:], token, index_expression, struct_field=field_name)
@@ -696,6 +710,38 @@ class FunctionCompiler:
             assign_token = self.parser.current_token()
             self.parser.advance_token()  # skip ASSIGN
             value_expression = self.expression()
+
+            return NodeArraySetElement(self.ids_map_list[:], id_token, index_expression, assign_token, value_expression, struct_field=field_name)
+
+        elif (self.parser.current_token().type == Token.ID and
+              self.parser.next_token().type == Token.LBRACK and
+              self.get_token_after_array_access().type == Token.DOT and
+              self.parser.token_at_index(self.get_index_after_array_access() + 1).type == Token.ID and
+              self.parser.token_at_index(self.get_index_after_array_access() + 2).type == Token.LBRACK and
+              self.parser.token_at_index(
+                  self.get_index_after_array_access(
+                      self.get_index_after_array_access() - self.parser.current_token_index + 1
+                  )
+              ).type == Token.ASSIGN
+              ):
+            # ID (LBRACK expression RBRACK)+ DOT ID (LBRACK expression RBRACK)+ ASSIGN value_expression
+            id_token = self.parser.current_token()
+            index_expression = self.get_array_index_expression()
+            self.parser.check_current_tokens_are([Token.DOT])
+            field_name = self.parser.next_token().data
+            struct_object = get_struct_from_id_token(self.ids_map_list, id_token)
+
+            self.parser.advance_token()  # point to ID (field_name)
+            field_index_expression = self.get_array_index_expression(struct_object)
+
+            self.parser.check_current_tokens_are([Token.ASSIGN])
+            assign_token = self.parser.current_token()
+            self.parser.advance_token()  # skip ASSIGN
+            value_expression = self.expression()
+
+            # Adds the offset to the struct in the array then it adds the offset to the field
+            add_token = Token(Token.BINOP, id_token.line, id_token.column, data="+")
+            index_expression = NodeToken(self.ids_map_list[:], token=add_token, left=index_expression, right=field_index_expression)
 
             return NodeArraySetElement(self.ids_map_list[:], id_token, index_expression, assign_token, value_expression, struct_field=field_name)
 
