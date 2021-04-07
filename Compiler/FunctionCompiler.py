@@ -858,6 +858,7 @@ class FunctionCompiler:
         self.parser.advance_token(amount=2)  # skip for (
 
         manually_inserted_variable_in_for_definition = False
+        variable = None
         code = ''
 
         # =============== enter FOR scope ===============
@@ -890,12 +891,16 @@ class FunctionCompiler:
         inner_scope_code = ""
         if self.parser.current_token().type == Token.LBRACE:  # do we have {} as for's statement?
             # compiling <for> scope inside { }:
-            self.insert_scope_variables_into_ids_map()
+            if manually_inserted_variable_in_for_definition:
+                inner_scope_code += "<" * get_variable_size(variable)
+            inner_scope_code += self.insert_scope_variables_into_ids_map()
             inner_scope_code += self.compile_scope_statements()
         else:
             inner_scope_code += self.compile_statement()
         # =============== exit FOR scope ===============
-        self.exit_scope()
+        inner_scope_code += self.exit_scope()
+        if manually_inserted_variable_in_for_definition:
+            inner_scope_code += ">" * get_variable_size(variable)
         # ==============================================
 
         code += initial_statement
