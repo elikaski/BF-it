@@ -1089,6 +1089,11 @@ def get_variable_dimensions_from_token(ids_map_list, ID_token):
     return variable.dimensions
 
 
+def get_variable_size_from_token(ids_map_list, ID_token):
+    variable = get_variable_from_ID_token(ids_map_list, ID_token)
+    return variable.size
+
+
 def get_id_index(ids_map_list, ID_token):
     variable = get_variable_from_ID_token(ids_map_list, ID_token)
     return variable.cell_index

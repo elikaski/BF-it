@@ -2,6 +2,7 @@ class Token:
 
     INT = "INT"
     VOID = "VOID"
+    STRUCT = "STRUCT"
     TRUE = "TRUE"
     FALSE = "FALSE"
     AND = "AND"
@@ -17,6 +18,7 @@ class Token:
     CONTINUE = "CONTINUE"
     SEMICOLON = "SEMICOLON"
     COMMA = "COMMA"
+    DOT = "DOT"
 
     LPAREN = "LPAREN"
     RPAREN = "RPAREN"
@@ -45,6 +47,7 @@ class Token:
     CHAR = "CHAR"
 
     PRINT = "PRINT"
+    SIZEOF = "SIZEOF"
     COMMENT = "COMMENT"
     UNIDENTIFIED = "UNIDENTIFIED"
 
