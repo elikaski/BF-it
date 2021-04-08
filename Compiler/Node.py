@@ -129,9 +129,9 @@ class NodeUnaryPrefix(Node):
                 token_id, index_node = self.node_literal.token_id, self.node_literal.node_expression
                 code = get_move_right_index_cells_code(current_pointer, index_node)
 
-                offset = self.node_literal.get_offset()
-                offset_to_array = get_offset_to_variable(self.ids_map_list, token_id, current_pointer + offset)
+                offset = self.node_literal.get_offset() + 2
                 # it is offset by 2 because in "get_move_right_index_cells_code", we moved 2 extra cells to the right, for retrieving the value
+                offset_to_array = get_offset_to_variable(self.ids_map_list, token_id, current_pointer + offset)
 
                 code += get_unary_prefix_op_code(self.token_operation, offset_to_array)
 
@@ -171,9 +171,9 @@ class NodeUnaryPostfix(Node):
             token_id, index_node = self.node_literal.token_id, self.node_literal.node_expression
             code = get_move_right_index_cells_code(current_pointer, index_node)
 
-            offset = self.node_literal.get_offset()
-            offset_to_array = get_offset_to_variable(self.ids_map_list, token_id, current_pointer + offset)
+            offset = self.node_literal.get_offset() + 2
             # it is offset by 2 because in "get_move_right_index_cells_code", we moved 2 extra cells to the right, for retrieving the value
+            offset_to_array = get_offset_to_variable(self.ids_map_list, token_id, current_pointer + offset)
 
             code += get_unary_postfix_op_code(self.token_operation, offset_to_array)
 
@@ -236,8 +236,7 @@ class NodeArrayElement(Node):
         if struct_field is not None:
             self.struct_object = get_struct_from_id_token(ids_map_list, token_id)
 
-    def get_offset(self):
-        offset = 2  # it is +2 because that is where the value is
+    def get_offset(self, offset=0):
         if self.struct_field is not None:
             offset -= get_offset_to_field(self.struct_object, self.struct_field)
 
@@ -269,7 +268,7 @@ class NodeArrayGetElement(NodeArrayElement):
         self.node_expression = node_expression
 
     def get_code(self, current_pointer, *args, **kwargs):
-        offset = self.get_offset()
+        offset = self.get_offset() + 2  # it is +2 because that is where the value is
 
         code = get_move_right_index_cells_code(current_pointer, self.node_expression)
         code += get_copy_from_variable_code(self.ids_map_list, self.token_id, current_pointer + offset)
@@ -319,7 +318,7 @@ class NodeArraySetElement(NodeArrayElement):
     def get_code(self, current_pointer, *args, **kwargs):
         # index, steps_taken_counter, value
 
-        offset = self.get_offset()
+        offset = self.get_offset() + 2  # it is +2 because that is where the value is
 
         code = self.node_expression_index.get_code(current_pointer)
         code += "[-]"  # counter = 0
@@ -365,21 +364,25 @@ class NodeArraySetElement(NodeArrayElement):
         return code
 
 
-class NodeArrayAssignment(Node):
+class NodeArrayAssignment(NodeArrayElement):
     """
         Used for array assignment
         E.g arr = = { 1, 2, 3... }
     """
-    def __init__(self, ids_map_list, token_id, literal_tokens_list):
-        Node.__init__(self, ids_map_list)
+    def __init__(self, ids_map_list, token_id, literal_tokens_list, struct_field=None):
+        NodeArrayElement.__init__(self, ids_map_list, token_id, struct_field)
         self.token_id = token_id
         self.literal_tokens_list = literal_tokens_list
 
     def get_code(self, current_pointer, *args, **kwargs):
-        array_dimensions = get_variable_dimensions_from_token(self.ids_map_list, self.token_id)
+        if self.struct_field is not None:
+            array_dimensions = self.struct_object.get_field_dimensions(self.struct_field)
+        else:
+            array_dimensions = get_variable_dimensions_from_token(self.ids_map_list, self.token_id)
         unpacked_literals_list = unpack_literal_tokens_to_array_dimensions(self.token_id, array_dimensions, self.literal_tokens_list)
 
-        offset = get_offset_to_variable(self.ids_map_list, self.token_id, current_pointer)
+        field_offset = self.get_offset()
+        offset = get_offset_to_variable(self.ids_map_list, self.token_id, current_pointer + field_offset)
         code = "<" * offset  # point to first array element
         for literal in unpacked_literals_list:
             code += get_literal_token_code(literal)  # evaluate this literal and point to next array element

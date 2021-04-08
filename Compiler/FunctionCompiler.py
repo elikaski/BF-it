@@ -191,7 +191,7 @@ class FunctionCompiler:
         idx = self.get_index_after_array_access(offset)
         return self.parser.token_at_index(idx)
 
-    def compile_array_assignment(self, token_id):
+    def compile_array_assignment(self, token_id, struct_field=None):
         # int id[a][b][c]... = {1, 2, 3, ...};
         # or int id[a][b][c]... = {{1, 2}, {3, 4}, ...};
         # or array assignment: id = {1, 2, 3, ...};
@@ -201,10 +201,10 @@ class FunctionCompiler:
 
         assert self.parser.current_token().type == Token.ASSIGN and self.parser.current_token().data == "="
         self.parser.check_current_tokens_are([Token.ASSIGN, Token.LBRACE])
-        self.parser.advance_token(1)  # skip to LBRACE
+        self.parser.advance_token()  # skip to LBRACE
         literal_tokens_list = self.parser.compile_array_initialization_list()
 
-        return NodeArrayAssignment(self.ids_map_list[:], token_id, literal_tokens_list)
+        return NodeArrayAssignment(self.ids_map_list[:], token_id, literal_tokens_list, struct_field)
 
     def add_ids_map(self):
         """
@@ -645,7 +645,8 @@ class FunctionCompiler:
 
                 if self.parser.current_token().type == Token.DOT:
                     self.parser.check_next_tokens_are([Token.ID])
-                    field_name = self.parser.next_token().data
+                    field_token = self.parser.next_token()
+                    field_name = field_token.data
                     self.parser.advance_token()  # point to after ID
 
                     if self.parser.next_token().type == Token.LBRACK:
@@ -702,11 +703,10 @@ class FunctionCompiler:
                     self.parser.advance_token()  # point to ASSIGN
 
                     if self.parser.next_token().type == Token.LBRACE:  # ID DOT ID ASSIGN ARRAY_INITIALIZATION
-                        raise NotImplementedError("Array Initialization is not currently implemented for fields")
-                        # struct_object = get_struct_from_id_token(self.ids_map_list, id_token)
-                        # if not struct_object.is_field_array(field_name):
-                        #     raise BFSemanticError("Trying to assign array to non-array field %s" % field_token)
-                        # return self.compile_array_assignment(id_token)
+                        struct_object = get_struct_from_id_token(self.ids_map_list, id_token)
+                        if not struct_object.is_field_array(field_name):
+                            raise BFSemanticError("Trying to assign array to non-array field %s" % field_token)
+                        return self.compile_array_assignment(id_token, field_name)
 
                     # ID DOT ID ASSIGN expression
                     assign_token = self.parser.current_token()
