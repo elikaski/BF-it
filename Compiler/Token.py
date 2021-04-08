@@ -17,6 +17,7 @@ class Token:
     CONTINUE = "CONTINUE"
     SWITCH = "SWITCH"
     CASE = "CASE"
+    DEFAULT = "DEFAULT"
     COLON = "COLON"
     SEMICOLON = "SEMICOLON"
     COMMA = "COMMA"

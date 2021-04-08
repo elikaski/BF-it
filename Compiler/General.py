@@ -168,6 +168,135 @@ def unpack_literal_tokens_to_array_dimensions(ID_token, array_dimensions, litera
     return unpacked_literals_list
 
 
+def process_switch_cases(expression_code, cases):
+    # This function receives expression_code (string) and cases (list of tuples) corresponding to switch cases
+    # Each tuple is (case_value, case_code, has_break)
+    # And it returns code for the switch-case statement (string)
+
+    if len(cases) == 0:
+        code = ">"  # point to next cell
+        code += expression_code  # evaluate expression
+        code += "<"  # point to expression
+        code += "<"  # discard result
+        return code
+
+    def process_cases(cases):
+        # This function gets the cases list of tuples
+        # And returns 2 values: default_code (string), all_cases_have_break (bool)
+        # Note - default_code includes code of all relevant cases that are after the default case (if there's no break)
+        all_cases_have_break = all(has_break for (_, _, has_break) in cases)
+
+        has_default, default_code = False, ""
+        for case, case_code, has_break in cases:
+            if case == "default":
+                has_default = True
+            if has_default:
+                default_code += case_code
+                if has_break:
+                    break
+        return default_code, all_cases_have_break
+
+    default_code, all_cases_have_break = process_cases(cases)
+
+    # using 2 temp cells: need_to_execute, expression_value
+    # need_to_execute - initialized with 1, zeroed if running any case. indicating we should execute code for one of the cases
+    # expression_value - initialized with expression's value, this is what we compare our cases' values to
+
+    code = "[-]+"  # need_to_execute = 1
+    code += ">"  # point to next cell
+    code += expression_code  # evaluate expression
+    code += "<"  # point to expression
+
+    if all_cases_have_break:  # small optimization for evaluating the expression
+        cases = [case for case in cases if case[0] != "default"]  # remove default to be able to sort. it is handled differently
+        cases.sort(key=lambda x: x[0], reverse=True)  # Can sort since correct flow is not needed
+
+    """
+        This loop compares the expression value to each case in the switch-case statement, in reverse order
+        It does so by increasing and decreasing expression, and comparing result to 0
+        E.G. if we have 
+            switch(x) {
+                case 2:
+                case 0:
+                case 5: 
+                case 1:
+            }
+        x will be put in <expression> cell, then:
+        Iteration 1 will "increase" <expression> cell by -1 (0-1) (comparing x with 1)
+        Iteration 2 will "increase" <expression> cell by -4 (1-5) (comparing x with 5)
+        Iteration 3 will increase   <expression> cell by +5 (5-0) (comparing x with 0)
+        Iteration 4 will "increase" <expression> cell by -2 (0-2) (comparing x with 2)
+    """
+
+    # at this point, we point to expression_value cell
+    comparisons = 0
+    last_case_val = 0
+    for case, _, _ in reversed(cases):
+        if case == "default":
+            continue  # default is handled differently
+        code += get_set_cell_value_code(-case, last_case_val)
+        last_case_val = -case
+        code += "["  # "if zero then jump to matching code part"
+        comparisons += 1
+
+    """
+    Then we add each case's code in the correct order:
+    <need_to_execute=1>
+    <compare_with_1>    [
+    <compare_with_5>        [
+    <compare_with_0>            [ 
+    <compare_with_2>                [
+                                        <default_code> <expression_value=0> <need_to_execute=0>
+                                    ]   <if need_to_execute> <code_for_2> <need_to_execute=0>
+                                ]       <if need_to_execute> <code_for_0> <need_to_execute=0>
+                            ]           <if need_to_execute> <code_for_5> <need_to_execute=0>
+                        ]               <if need_to_execute> <code_for_1> <need_to_execute=0>
+
+    notice each case uses the next case's ']' instruction to return to the comparisons block
+    for example, the '[' in case 5 line uses the ']' of case 1 code to "return" to the comparisons
+    this is because there is no way to "skip" code
+    """
+
+    # This code will execute after all the comparisons are done and non of the cases executed
+    if default_code:
+        code += ">"  # point to next available cell for running the "default" code
+        code += default_code  # add code for default case (it also includes all the following cases until break)
+        code += "<"  # point to expression_value
+    code += "<-"  # need_to_execute = 0
+    code += ">[-]"  # expression_value = 0. When going back to last comparison, it will be 0, so we skip the default
+    if comparisons > 0:
+        code += "]"  # "jump back address" of the last comparison
+        comparisons -= 1
+
+    # Add all the cases code
+    for case_index, (case, _, _) in enumerate(cases):
+        if case == "default":
+            continue  # default is handled differently
+
+        code += "<"  # point to need_to_execute
+        code += "["  # if its non-zero (i.e need to execute the code for this case)
+        code += ">>"  # point to next available cell for running the code
+
+        # Insert the code from this case and all the following cases until reaching break
+        # This generates a lot of code since each case includes all following cases until reaching break
+        for _, case_code, has_break in cases[case_index:]:
+            code += case_code
+            if has_break:
+                break
+        code += "<<"  # point to need_to_execute
+        code += "-"  # need_to_execute=0
+        code += "]"  # # end if
+        code += ">"  # point to expression_value
+
+        if comparisons > 0:
+            code += "]"  # "jump back address" of the comparison before us
+            comparisons -= 1
+
+    # end of the switch-case
+    code += "<"  # point to need_to_execute, which becomes next available cell
+    return code
+
+
 def get_copy_from_variable_code(ids_map_list, ID_token, current_pointer):
     # returns code that copies the value from cell of variable ID to current pointer, and then sets the pointer to the next cell
 
