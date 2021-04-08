@@ -635,130 +635,105 @@ class FunctionCompiler:
     def assignment(self):
         # assignment: ID ASSIGN expression | ID ASSIGN ARRAY_INITIALIZATION | ID (LBRACK expression RBRACK)+ ASSIGN expression | logical_or
 
-        if self.parser.current_token().type == Token.ID and self.parser.next_token().type == Token.ASSIGN:
-            if self.parser.next_token(2).type == Token.LBRACE:  # ID ASSIGN ARRAY_INITIALIZATION
-                token_ID = self.parser.current_token()
-                self.parser.advance_token()  # skip ID
-                variable_ID = get_variable_from_ID_token(self.ids_map_list, token_ID)
-                if not is_variable_array(variable_ID):
-                    raise BFSemanticError("Trying to assign array to non-array variable %s" % token_ID)
-                return self.compile_array_assignment(token_ID)
+        old_token_index = self.parser.current_token_index
 
-            # ID ASSIGN expression
+        if self.parser.current_token().type == Token.ID:
             id_token = self.parser.current_token()
-            assign_token = self.parser.next_token()
-            self.parser.advance_token(amount=2)  # skip ID ASSIGN
 
-            expression_node = self.expression()
+            if self.parser.next_token().type == Token.LBRACK:
+                index_expression = self.get_array_index_expression()
 
-            new_node = NodeToken(self.ids_map_list[:], left=NodeToken(self.ids_map_list[:], token=id_token), token=assign_token, right=expression_node)
-            return new_node
+                if self.parser.current_token().type == Token.DOT:
+                    self.parser.check_next_tokens_are([Token.ID])
+                    field_name = self.parser.next_token().data
+                    self.parser.advance_token()  # point to after ID
 
-        elif self.parser.current_token().type == Token.ID and self.parser.next_token().type == Token.DOT and self.parser.next_token(2).type == Token.ID and self.parser.next_token(3).type == Token.ASSIGN:
-            id_token = self.parser.current_token()
-            field_token = self.parser.next_token(2)
-            field_name = field_token.data
-            assign_token = self.parser.next_token(3)
-            self.parser.advance_token(amount=3)  # skip ID DOT ID ASSIGN
+                    if self.parser.next_token().type == Token.LBRACK:
+                        struct_object = get_struct_from_id_token(self.ids_map_list, id_token)
+                        field_index_expression = self.get_array_index_expression(struct_object)
 
-            if self.parser.next_token().type == Token.LBRACE:  # ID DOT ID ASSIGN ARRAY_INITIALIZATION
-                raise NotImplementedError("Array Initialization is not currently implemented for fields")
-                # struct_object = get_struct_from_id_token(self.ids_map_list, id_token)
-                # if not struct_object.is_field_array(field_name):
-                #     raise BFSemanticError("Trying to assign array to non-array field %s" % field_token)
-                # return self.compile_array_assignment(id_token)
+                        if self.parser.current_token().type == Token.ASSIGN:
+                            # ID (LBRACK expression RBRACK)+ DOT ID (LBRACK expression RBRACK)+ ASSIGN value_expression
+                            assign_token = self.parser.current_token()
+                            self.parser.advance_token()  # point to after ASSIGN
+                            value_expression = self.expression()
 
-            self.parser.advance_token()
+                            # Adds the offset to the struct in the array then it adds the offset to the field
+                            add_token = Token(Token.BINOP, id_token.line, id_token.column, data="+")
+                            index_expression = NodeToken(self.ids_map_list[:], token=add_token, left=index_expression, right=field_index_expression)
 
-            # ID DOT ID ASSIGN expression
+                            return NodeArraySetElement(self.ids_map_list[:], id_token, index_expression, assign_token, value_expression, struct_field=field_name)
 
-            expression_node = self.expression()
-            return NodeStructSetField(self.ids_map_list[:], id_token, field_name, assign_token, expression_node)
+                    elif self.parser.next_token().type == Token.ASSIGN:
+                        # ID (LBRACK expression RBRACK)+ DOT ID ASSIGN value_expression
+                        assign_token = self.parser.next_token()
+                        self.parser.advance_token(amount=2)  # point to after ASSIGN
+                        value_expression = self.expression()
 
-        elif self.parser.current_token().type == Token.ID and self.parser.next_token().type == Token.DOT and self.parser.next_token(2).type == Token.ID and self.parser.next_token(3).type == Token.LBRACK and \
-                self.get_token_after_array_access(offset=2).type == Token.ASSIGN:
-            # ID DOT ID (LBRACK expression RBRACK)+ ASSIGN value_expression
-            id_token = self.parser.current_token()
-            field_name = self.parser.next_token(2).data
-            self.parser.advance_token(amount=2)  # point to ID (field_name)
+                        return NodeArraySetElement(self.ids_map_list[:], id_token, index_expression, assign_token, value_expression, struct_field=field_name)
 
-            struct_object = get_struct_from_id_token(self.ids_map_list, id_token)
+                elif self.parser.current_token().type == Token.ASSIGN:
+                    # ID (LBRACK expression RBRACK)+ ASSIGN value_expression
+                    assign_token = self.parser.current_token()
+                    self.parser.advance_token()  # point to after ASSIGN
+                    value_expression = self.expression()
 
-            index_expression = self.get_array_index_expression(struct_object)
-            self.parser.check_current_tokens_are([Token.ASSIGN])
+                    return NodeArraySetElement(self.ids_map_list[:], id_token, index_expression, assign_token, value_expression)
 
-            assign_token = self.parser.current_token()
-            self.parser.advance_token()  # skip ASSIGN
-            value_expression = self.expression()
+            elif self.parser.next_token().type == Token.DOT:
+                self.parser.check_next_tokens_are([Token.DOT, Token.ID])
+                self.parser.advance_token(amount=2)  # point to ID (field_name)
+                field_token = self.parser.current_token()
+                field_name = field_token.data
 
-            return NodeArraySetElement(self.ids_map_list[:], id_token, index_expression, assign_token, value_expression, struct_field=field_name)
+                if self.parser.next_token().type == Token.LBRACK:
+                    struct_object = get_struct_from_id_token(self.ids_map_list, id_token)
+                    field_index_expression = self.get_array_index_expression(struct_object)
 
-        elif (self.parser.current_token().type == Token.ID and
-              self.parser.next_token().type == Token.LBRACK and
-              self.get_token_after_array_access().type == Token.DOT and
-              self.parser.token_at_index(self.get_index_after_array_access() + 1).type == Token.ID and
-              self.parser.token_at_index(self.get_index_after_array_access() + 2).type == Token.ASSIGN
-              ):
-            # ID (LBRACK expression RBRACK)+ DOT ID ASSIGN value_expression
-            id_token = self.parser.current_token()
-            index_expression = self.get_array_index_expression()
-            self.parser.check_current_tokens_are([Token.DOT])
-            field_name = self.parser.next_token().data
+                    if self.parser.current_token().type == Token.ASSIGN:
+                        # ID DOT ID (LBRACK expression RBRACK)+ ASSIGN value_expression
+                        assign_token = self.parser.current_token()
+                        self.parser.advance_token()  # point to after ASSIGN
+                        value_expression = self.expression()
 
-            self.parser.advance_token(amount=2)
-            self.parser.check_current_tokens_are([Token.ASSIGN])
-            assign_token = self.parser.current_token()
-            self.parser.advance_token()  # skip ASSIGN
-            value_expression = self.expression()
+                        return NodeArraySetElement(self.ids_map_list[:], id_token, field_index_expression, assign_token, value_expression, struct_field=field_name)
 
-            return NodeArraySetElement(self.ids_map_list[:], id_token, index_expression, assign_token, value_expression, struct_field=field_name)
+                elif self.parser.next_token().type == Token.ASSIGN:
+                    self.parser.advance_token()  # point to ASSIGN
 
-        elif (self.parser.current_token().type == Token.ID and
-              self.parser.next_token().type == Token.LBRACK and
-              self.get_token_after_array_access().type == Token.DOT and
-              self.parser.token_at_index(self.get_index_after_array_access() + 1).type == Token.ID and
-              self.parser.token_at_index(self.get_index_after_array_access() + 2).type == Token.LBRACK and
-              self.parser.token_at_index(
-                  self.get_index_after_array_access(
-                      self.get_index_after_array_access() - self.parser.current_token_index + 1
-                  )
-              ).type == Token.ASSIGN
-              ):
-            # ID (LBRACK expression RBRACK)+ DOT ID (LBRACK expression RBRACK)+ ASSIGN value_expression
-            id_token = self.parser.current_token()
-            index_expression = self.get_array_index_expression()
-            self.parser.check_current_tokens_are([Token.DOT])
-            field_name = self.parser.next_token().data
-            struct_object = get_struct_from_id_token(self.ids_map_list, id_token)
+                    if self.parser.next_token().type == Token.LBRACE:  # ID DOT ID ASSIGN ARRAY_INITIALIZATION
+                        raise NotImplementedError("Array Initialization is not currently implemented for fields")
+                        # struct_object = get_struct_from_id_token(self.ids_map_list, id_token)
+                        # if not struct_object.is_field_array(field_name):
+                        #     raise BFSemanticError("Trying to assign array to non-array field %s" % field_token)
+                        # return self.compile_array_assignment(id_token)
 
-            self.parser.advance_token()  # point to ID (field_name)
-            field_index_expression = self.get_array_index_expression(struct_object)
+                    # ID DOT ID ASSIGN expression
+                    assign_token = self.parser.current_token()
+                    self.parser.advance_token()  # point to after ASSIGN
+                    value_expression = self.expression()
 
-            self.parser.check_current_tokens_are([Token.ASSIGN])
-            assign_token = self.parser.current_token()
-            self.parser.advance_token()  # skip ASSIGN
-            value_expression = self.expression()
+                    return NodeStructSetField(self.ids_map_list[:], id_token, field_name, assign_token, value_expression)
 
-            # Adds the offset to the struct in the array then it adds the offset to the field
-            add_token = Token(Token.BINOP, id_token.line, id_token.column, data="+")
-            index_expression = NodeToken(self.ids_map_list[:], token=add_token, left=index_expression, right=field_index_expression)
+            elif self.parser.next_token().type == Token.ASSIGN:
+                self.parser.advance_token()  # point to after ID
+                if self.parser.next_token().type == Token.LBRACE:  # ID ASSIGN ARRAY_INITIALIZATION
+                    variable_ID = get_variable_from_ID_token(self.ids_map_list, id_token)
+                    if not is_variable_array(variable_ID):
+                        raise BFSemanticError("Trying to assign array to non-array variable %s" % id_token)
+                    return self.compile_array_assignment(id_token)
 
-            return NodeArraySetElement(self.ids_map_list[:], id_token, index_expression, assign_token, value_expression, struct_field=field_name)
+                # ID ASSIGN expression
+                assign_token = self.parser.current_token()
+                self.parser.advance_token()  # point to after ASSIGN
+                value_expression = self.expression()
 
-        elif self.parser.current_token().type == Token.ID and self.parser.next_token().type == Token.LBRACK and \
-                self.get_token_after_array_access().type == Token.ASSIGN:
-            # ID (LBRACK expression RBRACK)+ ASSIGN value_expression
-            id_token = self.parser.current_token()
-            index_expression = self.get_array_index_expression()
-            self.parser.check_current_tokens_are([Token.ASSIGN])
-            assign_token = self.parser.current_token()
-            self.parser.advance_token()  # skip ASSIGN
-            value_expression = self.expression()
+                return NodeToken(self.ids_map_list[:], left=NodeToken(self.ids_map_list[:], token=id_token), token=assign_token, right=value_expression)
 
-            return NodeArraySetElement(self.ids_map_list[:], id_token, index_expression, assign_token, value_expression)
-        else:
-            # logical or
-            return self.logical_or()
+        self.parser.advance_to_token_at_index(old_token_index)
+
+        # logical or
+        return self.logical_or()
 
     def expression(self):
         # expression: assignment
