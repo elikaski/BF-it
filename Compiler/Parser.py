@@ -1,5 +1,6 @@
 from .Exceptions import BFSyntaxError, BFSemanticError
 from .Token import Token
+from .General import is_token_literal
 
 
 class Parser:
@@ -92,7 +93,7 @@ class Parser:
 
         list_tokens = []
 
-        while self.current_token().type in [Token.NUM, Token.CHAR, Token.TRUE, Token.FALSE, Token.LBRACE]:
+        while is_token_literal(self.current_token()) or self.current_token().type == Token.LBRACE:
             if self.current_token().type == Token.LBRACE:  # list of (literals | list)
                 list_tokens.append(self.compile_array_initialization_list())
             else:  # literal

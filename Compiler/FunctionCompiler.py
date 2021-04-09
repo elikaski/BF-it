@@ -3,6 +3,7 @@ from functools import reduce
 from .Exceptions import BFSyntaxError, BFSemanticError
 from .Functions import check_function_exists, get_function_object
 from .General import get_variable_dimensions_from_token, get_move_to_return_value_cell_code, get_print_string_code, get_variable_from_ID_token
+from .General import get_literal_token_value, process_switch_cases, is_token_literal
 from .Globals import create_variable_from_definition, get_global_variables, get_variable_size, is_variable_array
 from .Node import NodeToken, NodeArraySetElement, NodeUnaryPrefix, NodeUnaryPostfix, NodeArrayGetElement, NodeFunctionCall, NodeArrayAssignment
 from .Parser import Parser
@@ -345,7 +346,7 @@ class FunctionCompiler:
             index_expression = self.get_array_index_expression()
             return NodeArrayGetElement(self.ids_map_list[:], token, index_expression)
 
-        if token.type in [Token.NUM, Token.CHAR, Token.ID, Token.TRUE, Token.FALSE]:
+        if is_token_literal(token) or token.type == Token.ID:
             self.parser.advance_token()
             return NodeToken(self.ids_map_list[:], token=token)
 
@@ -835,6 +836,62 @@ class FunctionCompiler:
 
         return code
 
+    def compile_switch(self):  # switch (expression) { ((default | case literal): statements* break;? statements*)* }
+        self.parser.check_current_tokens_are([Token.SWITCH, Token.LPAREN])
+        self.parser.advance_token(amount=2)  # point to after LPAREN
+
+        self.increase_stack_pointer()  # use 1 temp cell before evaluating the expression
+        expression_code = self.compile_expression()
+        self.parser.check_current_tokens_are([Token.RPAREN, Token.LBRACE])
+        self.parser.advance_token(amount=2)  # point to after LBRACE
+
+        self.increase_stack_pointer()  # use 1 additional temp cell for indicating we need to execute a case
+        cases = list()  # list of tuples: (value/"default" (int or string), case_code (string), has_break(bool))
+
+        while self.parser.current_token().type in [Token.CASE, Token.DEFAULT]:  # (default | CASE literal) COLON statement* break;? statements*
+            if self.parser.current_token().type == Token.CASE:
+                self.parser.advance_token()  # skip CASE
+                constant_value_token = self.parser.current_token()
+                if not is_token_literal(constant_value_token):
+                    raise BFSemanticError("Switch case value is not a literal. Token is %s" % constant_value_token)
+
+                value = get_literal_token_value(constant_value_token)
+                if value in [case for (case, _, _) in cases]:
+                    raise BFSemanticError("Case %d already exists. Token is %s" % (value, constant_value_token))
+            else:
+                assert self.parser.current_token().type == Token.DEFAULT
+                value = "default"
+                if value in [case for (case, _, _) in cases]:
+                    raise BFSemanticError("default case %s already exists." % self.parser.current_token())
+
+            self.parser.check_next_tokens_are([Token.COLON])
+            self.parser.advance_token(amount=2)  # point to after COLON
+
+            inner_case_code = ""
+            while self.parser.current_token().type not in [Token.CASE, Token.DEFAULT, Token.RBRACE, Token.BREAK]:
+                inner_case_code += self.compile_statement(allow_declaration=False)  # not allowed to declare variables directly inside case
+
+            has_break = False
+            if self.parser.current_token().type == Token.BREAK:  # ignore all statements after break
+                self.parser.check_next_tokens_are([Token.SEMICOLON])
+                self.parser.advance_token(amount=2)  # skip break SEMICOLON
+                has_break = True
+                while self.parser.current_token().type not in [Token.CASE, Token.DEFAULT, Token.RBRACE]:
+                    self.compile_statement()  # advance the parser and discard the code
+            cases.append((value, inner_case_code, has_break))
+
+        if self.parser.current_token().type not in [Token.CASE, Token.DEFAULT, Token.RBRACE]:
+            raise BFSyntaxError("Expected case / default / RBRACE (}) instead of token %s" % self.parser.current_token())
+        self.parser.check_current_tokens_are([Token.RBRACE])
+        self.parser.advance_token()
+        self.decrease_stack_pointer(amount=2)
+
+        return process_switch_cases(expression_code, cases)
+
+    def compile_break(self):
+        # TODO: Make the break statement in scopes inside switch-case (including if/else), and for/do/while
+        raise NotImplementedError("Break statement found outside of switch case first scope.\nBreak is not currently implemented for while/for/do statements.\nToken is %s" % self.parser.current_token())
+
     def compile_for(self):
         # for (statement expression; expression) inner_scope_code   note: statement contains ;, and inner_scope_code can be scope { }
         # (the statement/second expression/inner_scope_code can be empty)
@@ -916,13 +973,16 @@ class FunctionCompiler:
 
         return code
 
-    def compile_statement(self):
+    def compile_statement(self, allow_declaration=True):
         # returns code that performs the current statement
         # at the end, the pointer points to the same location it pointed before the statement was executed
 
         token = self.parser.current_token()
-
         if token.type == Token.INT:  # INT ID ((= EXPRESSION) | ([NUM])+ (= ARRAY_INITIALIZATION)?)? SEMICOLON
+            if not allow_declaration:
+                raise BFSemanticError("Cannot define variable (%s) directly inside case. "
+                                      "Can define inside new scope {} or outside the switch statement" % token)
+
             self.parser.check_next_tokens_are([Token.ID])
             self.parser.advance_token()  # skip "INT" (now points to ID)
             assert self.parser.current_token().type == Token.ID
@@ -977,6 +1037,12 @@ class FunctionCompiler:
         elif token.type == Token.DO:
             return self.compile_do_while()
 
+        elif token.type == Token.SWITCH:
+            return self.compile_switch()
+
+        elif token.type == Token.BREAK:
+            return self.compile_break()
+
         elif token.type == Token.RETURN:
             return self.compile_return()
 
@@ -987,6 +1053,9 @@ class FunctionCompiler:
             # empty statement
             self.parser.advance_token()  # skip ;
             return ""
+
+        elif token.type in [Token.CASE, Token.DEFAULT]:
+            raise BFSyntaxError("%s not inside a switch statement" % token)
 
         raise NotImplementedError(token)
 

@@ -15,6 +15,10 @@ class Token:
     DO = "DO"
     BREAK = "BREAK"
     CONTINUE = "CONTINUE"
+    SWITCH = "SWITCH"
+    CASE = "CASE"
+    DEFAULT = "DEFAULT"
+    COLON = "COLON"
     SEMICOLON = "SEMICOLON"
     COMMA = "COMMA"
 

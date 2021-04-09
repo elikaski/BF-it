@@ -1,0 +1,410 @@
+void test0() {
+    for(int i = 1; i != 6; i++) {
+        // Switch statements has cases.
+        // The case value can only be a literal.
+        switch(i) {
+            case 1:
+                print("A");
+                break;
+            case 2:
+                print("BB");
+                break;
+            case 3:
+                print("CCC");
+                break;
+            case 4:
+                print("DDDD");
+                break;
+            case 5:
+                print("EEEEE");
+                break;
+        }
+    }
+
+    print("\n\n");
+
+    for(int i = 1; i != 6; i++) {
+        // The case code doesn't need a break statement.
+        // If it doesn't have a break statement it continues into the next case code.
+        switch(i) {
+            case 1:
+                print("1");
+            case 2:
+                print("2");
+            case 3:
+                print("3");
+            case 4:
+                print("4");
+            case 5:
+                print("5");
+                break;
+        }
+        printchar('\n');
+    }
+
+    printchar('\n');
+
+    for(int i = 1; i != 6; i++) {
+        // The case code can also be empty.
+        // Then it just continues into the next case
+        switch(i) {
+            case 1:
+            case 2:
+                print("#");
+                break;
+            case 3:
+            case 4:
+                print("&");
+                break;
+            case 5:
+                print("%");
+                break;
+        }
+    }
+
+    printchar('\n');
+
+    switch(2) {
+        case 2: { // This has a scope, which means you can declare variables.
+            int hello = 5;
+            printchar(hello + '0');
+        }
+        break;
+    }
+
+    printchar('\n');
+}
+
+
+void test1() {
+    int x;
+
+    switch (0) {
+        default: print("1");
+    }
+    switch (0) {
+        default: print("1"); break;
+    }
+    switch (5) {
+        case 5: print("1");
+    }
+    switch (5) {
+        case 5: print("1"); break;
+    }
+    switch (5) {
+        case 2: print("0");
+        default: print("1");
+    }
+    switch (5) {
+        case 2: print("0"); break;
+        default: print("1");
+    }
+    switch (5) {
+        case 2: print("0"); break;
+        default: print("1"); break;
+    }
+    switch (5) {
+        case 2: print("0");
+        default: print("1"); break;
+    }
+
+    switch (5) {
+        case 5: print("1");
+        default: print("1"); break;
+    }
+
+    x = 5;
+    switch (x--) {
+        case 5: print("1"); break;
+        default: print("0"); break;
+    }
+    printint(x==4);
+    switch (--x) {
+        case 3: print("1"); break;
+        default: print("0"); break;
+    }
+    printint(x==3);
+
+
+    int arr[5] = {0, 0, 1, 0, 0};
+    switch (arr[2]--) {
+        case 1: print("1"); break;
+        default: print("0"); break;
+    }
+    printint(arr[2] == 0);
+}
+
+
+void test2() {
+    print("\n");
+    for (int i = 0; i < 10; i++) {
+        printint(i);
+        switch(i) {
+            case 1: print("A"); break;
+            case 2: print("BB"); break;
+            case 3: print("CCC"); break;
+            case 4: print("DDDD"); break;
+            case 5: print("EEEEE"); break;
+            default: print("XXX"); break;
+        }
+        print(" ");
+    }
+    print("\n");
+
+    // random order
+    for (int i = 0; i < 10; i++) {
+        printint(i);
+        switch(i) {
+            case 3: print("CCC"); break;
+            case 1: print("A"); break;
+            default: print("XXX"); break;
+            case 5: print("EEEEE"); break;
+            case 2: print("BB"); break;
+            case 4: print("DDDD"); break;
+        }
+        print(" ");
+    }
+    print("\n");
+
+    // no breaks
+    for (int i = 0; i < 10; i++) {
+        printint(i);
+        switch(i) {
+            default: print("XXX"); break;
+            case 5: print("A");
+            case 4: print("A");
+            case 3: print("A");
+            case 2: print("A");
+            case 1: print("A");
+            case 0: print("A");
+        }
+        print(" ");
+    }
+    print("\n");
+
+    // no break in default as well
+    for (int i = 0; i < 10; i++) {
+        printint(i);
+        switch(i) {
+            default: print("XXX");
+            case 5: print("A");
+            case 4: print("A");
+            case 3: print("A");
+            case 2: print("A");
+            case 1: print("A");
+            case 0: print("A");
+        }
+        print(" ");
+    }
+    print("\n");
+}
+
+void test3() {
+
+    // empty switch-case
+    for (int i = 0; i < 10; i++) {
+        printint(i);
+        switch(i) {
+
+        }
+        print(" ");
+    }
+    print("\n");
+
+
+    // no default
+    for (int i = 0; i < 10; i++) {
+        printint(i);
+        switch(i) {
+            case 5: print("A");
+            case 4: print("A");
+            case 3: print("A");
+            case 2: print("A");
+            case 1: print("A");
+            case 0: print("A");
+        }
+        print(" ");
+    }
+    print("\n");
+
+    // case containing only break
+    for (int i = 0; i < 10; i++) {
+        printint(i);
+        switch(i) {
+            case 5: print("A");
+            case 4: print("A");
+            case 3: break;
+            case 2: print("A");
+            case 1: print("A");
+            case 0: print("A");
+        }
+        print(" ");
+    }
+    print("\n");
+}
+
+
+void test4() {
+    // empty switch-case
+    switch (0) {
+
+    }
+
+    // case with no code
+    for (int i = 0; i < 10; i++) {
+        printint(i);
+        switch(i) {
+            case 5:
+            case 4:
+            case 3:
+            case 2:
+            case 1:
+            case 0:
+        }
+        print(" ");
+    }
+    print("\n");
+
+    // cases with combined code
+    for (int i = 0; i < 10; i++) {
+        printint(i);
+        printchar('-');
+        switch(i) {
+            case 5:
+            case 4:
+            case 3: print("3/4/5"); break;
+            case 2:
+            case 1:
+            case 0: print("0/1/2"); break;
+            default: print("???");
+        }
+        print(" ");
+    }
+    print("\n");
+
+
+    int x = 10;
+    for (int i = 0; i < 10; i++) {
+        switch(i) {
+            case 1: x -= 1; break;
+            case 4: x -= 4; break;
+        }
+    }
+    printint(x==5);
+    print("\n");
+}
+
+
+void test5() {
+    // nested switch-case
+
+    for (int x = 3; x <= 4; x++) {
+        for (int y = 7; y <= 8; y++) {
+            switch (x) {
+            case 3:
+                switch (y) {
+                    case 8: print("38 "); break;
+                    case 7: print("37 "); break;
+                }
+                break;
+            case 4:
+                switch (y) {
+                    case 7: print("47 "); break;
+                    default: print("48 "); break;
+                }
+                break;
+            }
+        }
+    }
+    print("\n");
+}
+
+
+void test6() {
+    // scopes inside cases
+
+    for (int i = 1; i <= 3; i++) {
+        switch (i) {
+            case 1:
+            {
+                int x = 1;
+                printint(x);
+            }
+            // no break
+            case 2:
+            {
+                int x = 2;
+                printint(x);
+                // break; // <------ can't put break inside a scope :(
+            }
+            break;
+            case 3:
+            {
+                int x = 3;
+                printint(x);
+            }
+        }
+    }
+    print("\n");
+}
+
+
+int test7() {
+    // literals that are not plain decimal numbers
+    for (int i = 0; i < 40; i++) {
+        switch(i) {
+            case false: print("false "); break; // false evaluates to 0
+            case true: print("true "); break; // true evaluates to 1
+            case 0x10: print("0x10 "); break; // can use hex
+            case '!': print("! "); break; // can use characters
+        }
+    }
+    print("\n");
+
+
+    int arr[5] = {0, 0, 5, 0, 0};
+    switch (arr[2]--) { // expression in switch can have side effects
+        case 5: print("1");
+    }
+    printint(arr[0] == 0);
+    printint(arr[1] == 0);
+    printint(arr[2] == 4);
+    printint(arr[3] == 0);
+    printint(arr[4] == 0);
+    print("\n");
+}
+
+void test8() {
+    for(int i = 0; i != 15; i++) {
+        printint(i);
+        switch(i) {
+            case 3:
+                print(" 3 ");
+                break;
+            case 4:
+            case 6:
+            case 7:
+                break;
+            case 8:
+            case 9:
+            case 10:
+            default:
+                print(" def ");
+            case 5:
+                print(" 5 ");
+        }
+        print("\n");
+    }
+}
+
+int main() {
+    test0();
+    test1();
+    test2();
+    test3();
+    test4();
+    test5();
+    test6();
+    test7();
+    test8();
+}
