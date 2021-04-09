@@ -374,6 +374,29 @@ int test7() {
     print("\n");
 }
 
+void test8() {
+    for(int i = 0; i != 15; i++) {
+        printint(i);
+        switch(i) {
+            case 3:
+                print(" 3 ");
+                break;
+            case 4:
+            case 6:
+            case 7:
+                break;
+            case 8:
+            case 9:
+            case 10:
+            default:
+                print(" def ");
+            case 5:
+                print(" 5 ");
+        }
+        print("\n");
+    }
+}
+
 int main() {
     test0();
     test1();
@@ -383,4 +406,5 @@ int main() {
     test5();
     test6();
     test7();
+    test8();
 }

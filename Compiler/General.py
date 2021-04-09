@@ -272,7 +272,8 @@ def process_switch_cases(expression_code, cases):
     for case_index, (case, case_code, has_break) in enumerate(cases):
         if case == "default":
             continue  # default is handled differently
-        if has_break or case_code:  # Meaning this case is not identical to the following case
+        if has_break or case_code or default_code:  # Meaning this case is not identical to the following case
+            # Or there exist a default case. And because it is handled differently, we need to have its code multiple times in different locations
             # (if they are identical then no need to generate the same code multiple times (one for each case).
             # this case will use the following case's code in the next loop iteration)
 
