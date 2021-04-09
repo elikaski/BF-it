@@ -183,6 +183,37 @@ class FunctionCompiler:
 
         return NodeArrayAssignment(self.ids_map_list[:], token_id, literal_tokens_list)
 
+    def compile_variable_declaration(self):
+        self.parser.check_next_tokens_are([Token.ID])
+        self.parser.advance_token()  # skip "INT" (now points to ID)
+        assert self.parser.current_token().type == Token.ID
+
+        if self.parser.next_token().type == Token.SEMICOLON:  # INT ID SEMICOLON
+            self.parser.advance_token(2)  # skip ID SEMICOLON
+            return ''  # no code is generated here. code was generated for defining this variable when we entered the scope
+
+        elif self.parser.next_token().type == Token.ASSIGN and self.parser.next_token().data == "=":  # INT ID = EXPRESSION SEMICOLON
+            return self.compile_expression_as_statement()  # compile_expression_as_statement skips the SEMICOLON
+
+        elif self.parser.next_token().type == Token.LBRACK:  # INT ID (LBRACK NUM RBRACK)+ (= ARRAY_INITIALIZATION)? SEMICOLON
+            # array definition (int arr[2][3]...[];) or array definition and initialization (arr[2][3]...[] = {...};)
+            token_id = self.parser.current_token()
+            self.parser.advance_token()  # skip ID
+            while self.parser.current_token().type == Token.LBRACK:  # loop to skip to after last RBRACK ]
+                self.parser.check_current_tokens_are([Token.LBRACK, Token.NUM, Token.RBRACK])
+                self.parser.advance_token(3)  # skip LBRACK, NUM, RBRACK
+            if self.parser.current_token().type == Token.ASSIGN:  # initialization
+                initialization_node = self.compile_array_assignment(token_id)
+                code = initialization_node.get_code(self.current_stack_pointer()) + "<"  # discard expression value
+            else:
+                code = ''  # just array definition
+                # no code is generated here. code was generated for defining this variable when we entered the scope
+            self.parser.check_current_tokens_are([Token.SEMICOLON])
+            self.parser.advance_token()  # skip SEMICOLON
+            return code
+        else:
+            raise BFSyntaxError("Unexpected %s after %s" % (self.parser.next_token(), self.parser.current_token()))
+
     def add_ids_map(self):
         """
         the first cells are global variable cells (index 0 to n)
@@ -982,34 +1013,7 @@ class FunctionCompiler:
             if not allow_declaration:
                 raise BFSemanticError("Cannot define variable (%s) directly inside case. "
                                       "Can define inside new scope {} or outside the switch statement" % token)
-
-            self.parser.check_next_tokens_are([Token.ID])
-            self.parser.advance_token()  # skip "INT" (now points to ID)
-            assert self.parser.current_token().type == Token.ID
-
-            if self.parser.next_token().type == Token.SEMICOLON:  # INT ID SEMICOLON
-                self.parser.advance_token(2)  # skip ID SEMICOLON
-                return ''  # no code is generated here. code was generated for defining this variable when we entered the scope
-
-            elif self.parser.next_token().type == Token.LBRACK:  # INT ID (LBRACK NUM RBRACK)+ (= ARRAY_INITIALIZATION)? SEMICOLON
-                # array definition (int arr[2][3]...[];) or array definition and initialization (arr[2][3]...[] = {...})
-                token_id = self.parser.current_token()
-                self.parser.advance_token(1)  # skip ID
-                while self.parser.current_token().type == Token.LBRACK:  # loop to skip to after last RBRACK ]
-                    self.parser.check_current_tokens_are([Token.LBRACK, Token.NUM, Token.RBRACK])
-                    self.parser.advance_token(3)  # skip LBRACK, NUM, RBRACK
-                if self.parser.current_token().type == Token.ASSIGN:  # initialization
-                    initialization_node = self.compile_array_assignment(token_id)
-                    return initialization_node.get_code(self.current_stack_pointer()) + "<"  # discard expression value
-                # just definition
-                self.parser.check_current_tokens_are([Token.SEMICOLON])
-                self.parser.advance_token()  # skip SEMICOLON
-                return ''  # no code is generated here. code was generated for defining this variable when we entered the scope
-
-            elif self.parser.next_token().type == Token.ASSIGN and self.parser.next_token().data == "=":  # INT ID = EXPRESSION SEMICOLON
-                return self.compile_expression_as_statement()
-            else:
-                raise BFSyntaxError("Unexpected %s after %s" % (self.parser.next_token(), self.parser.current_token()))
+            return self.compile_variable_declaration()
 
         elif token.type in [Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE]:  # ++ID;
             return self.compile_expression_as_statement()
