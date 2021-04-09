@@ -269,24 +269,28 @@ def process_switch_cases(expression_code, cases):
         comparisons -= 1
 
     # Add all the cases code
-    for case_index, (case, _, _) in enumerate(cases):
+    for case_index, (case, case_code, has_break) in enumerate(cases):
         if case == "default":
             continue  # default is handled differently
+        if has_break or case_code:  # Meaning this case is not identical to the following case
+            # (if they are identical then no need to generate the same code multiple times (one for each case).
+            # this case will use the following case's code in the next loop iteration)
 
-        code += "<"  # point to need_to_execute
-        code += "["  # if its non-zero (i.e need to execute the code for this case)
-        code += ">>"  # point to next available cell for running the code
+            # Generate code for this case (unique)
+            code += "<"  # point to need_to_execute
+            code += "["  # if its non-zero (i.e need to execute the code for this case)
+            code += ">>"  # point to next available cell for running the code
 
-        # Insert the code from this case and all the following cases until reaching break
-        # This generates a lot of code since each case includes all following cases until reaching break
-        for _, case_code, has_break in cases[case_index:]:
-            code += case_code
-            if has_break:
-                break
-        code += "<<"  # point to need_to_execute
-        code += "-"  # need_to_execute=0
-        code += "]"  # # end if
-        code += ">"  # point to expression_value
+            # Insert the code from this case and all the following cases until reaching break
+            # This generates a lot of code since each case includes all following cases until reaching break
+            for _, following_case_code, following_has_break in cases[case_index:]:
+                code += following_case_code
+                if following_has_break:
+                    break
+            code += "<<"  # point to need_to_execute
+            code += "-"  # need_to_execute=0
+            code += "]"  # # end if
+            code += ">"  # point to expression_value
 
         if comparisons > 0:
             code += "]"  # "jump back address" of the comparison before us
