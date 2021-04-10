@@ -158,10 +158,11 @@ class FunctionCompiler:
                                   (str(ID_token), len(dimensions), self.parser.current_token()))
         return index_expression
 
-    def get_token_after_array_access(self):
+    def get_token_after_array_access(self, offset=0):
         # in case we have: "ID[a][b][c]...[z] next_token", return "next_token"
-        self.parser.check_current_tokens_are([Token.ID, Token.LBRACK])
-        idx = self.parser.current_token_index + 1  # point to LBRACK
+        idx = self.parser.current_token_index + offset
+        self.parser.check_next_tokens_are([Token.ID, Token.LBRACK], starting_index=idx - 1)
+        idx += 1  # point to LBRACK
         while self.parser.token_at_index(idx).type == Token.LBRACK:
             idx = self.parser.find_matching(idx)  # point to RBRACK
             idx += 1  # advance to one after the RBRACK
@@ -202,6 +203,7 @@ class FunctionCompiler:
             while self.parser.current_token().type == Token.LBRACK:  # loop to skip to after last RBRACK ]
                 self.parser.check_current_tokens_are([Token.LBRACK, Token.NUM, Token.RBRACK])
                 self.parser.advance_token(3)  # skip LBRACK, NUM, RBRACK
+
             if self.parser.current_token().type == Token.ASSIGN:  # initialization
                 initialization_node = self.compile_array_assignment(token_id)
                 code = initialization_node.get_code(self.current_stack_pointer()) + "<"  # discard expression value
@@ -959,7 +961,11 @@ class FunctionCompiler:
             manually_inserted_variable_in_for_definition = True
             code += ">" * get_variable_size(variable)
 
-            if self.parser.next_token(2).type != Token.ASSIGN:
+            show_side_effect_warning = self.parser.next_token(2).type != Token.ASSIGN
+            if self.parser.next_token(2).type == Token.LBRACK:
+                show_side_effect_warning = self.get_token_after_array_access(offset=1).type != Token.ASSIGN
+
+            if show_side_effect_warning:
                 print("[Warning] For loop variable '%s' isn't assigned to anything and may cause side effects" % self.parser.next_token())
 
         if self.parser.current_token().type == Token.LBRACE:  # statement is a scope
