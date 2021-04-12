@@ -40,12 +40,12 @@ def brainfuck(program):
             data_pointer -= 1
         elif command == '+':
             data[data_pointer] = (data.get(data_pointer, 0) + 1)
-            if data[data_pointer] == 256:
+            if data[data_pointer] == 65536:
                 data[data_pointer] = 0
         elif command == '-':
             data[data_pointer] = (data.get(data_pointer, 0) - 1)
             if data[data_pointer] == -1:
-                data[data_pointer] = 255
+                data[data_pointer] = 65535
         elif command == ',':
             data[data_pointer] = ord(sys.stdin.read(1)) % 256
         elif command == '.':
