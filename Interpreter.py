@@ -65,17 +65,20 @@ def brainfuck(program):
     if data_pointer != 0:
         print("WARNING (interpreter) - at the end of the execution the data pointer is %s instead of 0 (possibly a compiler issue)" % str(data_pointer))
 
+
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print("Usage: '%s' <path_to_brainfuck_code_file> <x-bit ints>" % sys.argv[0])
+        print("Usage: '%s' <path_to_brainfuck_code_file>\nUsage: '%s' <path_to_brainfuck_file> -bits <x-bit ints>\nUsage: '%s' <path_to_brainfuck_file> --interpreter-bits <x-bit ints>" % (sys.argv[0], sys.argv[0]))
         exit(0)
 
-    fpath = sys.argv[1]
-    with open(fpath, "rt") as f:
-        code = f.read()
     parser = argparse.ArgumentParser()
-    parser.add_argument("--interpreter-bits", "-bits", metavar="bits", nargs=1, help="Path to output Brainfuck file")
+    parser.add_argument("filepath", metavar="fp")
+    parser.add_argument("-bits", "--interpreter-bits", metavar="bits", nargs=1)
 
     args = parser.parse_args()
+    bits = args.bits  #  TODO: Doesn't work for me
+    f = open(args.fp, 'r')
+    code = f.read()
+    f.close()
 
     brainfuck(code)
