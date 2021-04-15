@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-bits = int(sys.argv(2))
+import argparse
 
 
 def create_jumps_dictionary(program):
@@ -73,5 +73,9 @@ if __name__ == '__main__':
     fpath = sys.argv[1]
     with open(fpath, "rt") as f:
         code = f.read()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--interpreter-bits", "-bits", metavar="bits", nargs=1, help="Path to output Brainfuck file")
+
+    args = parser.parse_args()
 
     brainfuck(code)
