@@ -64,9 +64,9 @@ class Compiler:
                 code = (code + '>') * get_variable_size(variable)  # advance to after this variable
                 return code
             elif self.parser.current_token().type == Token.ASSIGN and self.parser.current_token().data == "=":
-                # array definition and initialization - INT ID (LBRACK NUM RBRACK)+ ASSIGN (LBRACE ... RBRACE)+ SEMICOLON
+                # array definition and initialization - INT ID (LBRACK NUM RBRACK)+ ASSIGN ((LBRACE ... RBRACE)+|STRING) SEMICOLON
                 self.parser.advance_token()  # skip ASSIGN
-                self.parser.check_current_tokens_are([Token.LBRACE])
+                assert self.parser.current_token().type in [Token.LBRACE, Token.STRING]
 
                 literal_tokens_list = self.parser.compile_array_initialization_list()
                 self.parser.check_current_tokens_are([Token.SEMICOLON])

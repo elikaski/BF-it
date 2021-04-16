@@ -88,10 +88,20 @@ class Parser:
     def compile_array_initialization_list(self):
         # {1, 2, 3, ...} or {array_initialization_list, array_initialization_list, array_initialization_list, ...}
         # parses the definition and returns a list (of list of list ....) of literal tokens (NUM, CHAR, TRUE, FALSE)
-        assert self.current_token().type == Token.LBRACE
-        self.advance_token()  # skip to after LBRACE
 
         list_tokens = []
+
+        if self.current_token().type == Token.STRING:
+            string_token = self.current_token()
+            line, column = string_token.line, string_token.column
+            for char in string_token.data:
+                list_tokens.append(Token(Token.NUM, line, column, str(ord(char))))
+
+            self.advance_token()  # point to after STRING
+            return list_tokens
+
+        assert self.current_token().type == Token.LBRACE
+        self.advance_token()  # skip to after LBRACE
 
         while is_token_literal(self.current_token()) or self.current_token().type == Token.LBRACE:
             if self.current_token().type == Token.LBRACE:  # list of (literals | list)

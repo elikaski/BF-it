@@ -171,15 +171,16 @@ class FunctionCompiler:
 
     def compile_array_assignment(self, token_id):
         # int id[a][b][c]... = {1, 2, 3, ...};
+        # or int id[a][b][c]... = "\1\2\3...";
         # or int id[a][b][c]... = {{1, 2}, {3, 4}, ...};
         # or array assignment: id = {1, 2, 3, ...};
         self.parser.check_current_tokens_are([Token.ASSIGN])
         if self.parser.current_token().data != "=":
             raise BFSyntaxError("Unexpected %s when assigning array. Expected ASSIGN (=)" % self.parser.current_token())
 
-        assert self.parser.current_token().type == Token.ASSIGN and self.parser.current_token().data == "="
-        self.parser.check_current_tokens_are([Token.ASSIGN, Token.LBRACE])
-        self.parser.advance_token(1)  # skip to LBRACE
+        assert self.parser.next_token().type in [Token.LBRACE, Token.STRING]
+
+        self.parser.advance_token()  # skip to LBRACE or STRING
         literal_tokens_list = self.parser.compile_array_initialization_list()
 
         return NodeArrayAssignment(self.ids_map_list[:], token_id, literal_tokens_list)
@@ -586,7 +587,7 @@ class FunctionCompiler:
 
         if self.parser.current_token().type == Token.ID and self.parser.next_token().type == Token.ASSIGN:
 
-            if self.parser.next_token(2).type == Token.LBRACE:  # ID ASSIGN ARRAY_INITIALIZATION
+            if self.parser.next_token(2).type in [Token.LBRACE, Token.STRING]:  # ID ASSIGN ARRAY_INITIALIZATION
                 token_ID = self.parser.current_token()
                 self.parser.advance_token()  # skip ID
                 variable_ID = get_variable_from_ID_token(self.ids_map_list, token_ID)
