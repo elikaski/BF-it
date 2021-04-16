@@ -68,16 +68,16 @@ def brainfuck(program):
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print("Usage: '%s' <path_to_brainfuck_code_file>\nUsage: '%s' <path_to_brainfuck_file> -bits <x-bit ints>\nUsage: '%s' <path_to_brainfuck_file> --interpreter-bits <x-bit ints>" % (sys.argv[0], sys.argv[0]))
+        print("Usage: '%s' <path_to_brainfuck_code_file>\nUsage: '%s' <path_to_brainfuck_file> -b <x-bit ints>\nUsage: '%s' <path_to_brainfuck_file> --bits <x-bit ints>" % (sys.argv[0], sys.argv[0], sys.argv[0]))
         exit(0)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("filepath", metavar="fp")
-    parser.add_argument("-bits", "--interpreter-bits", metavar="bits", nargs=1)
+    parser.add_argument("filepath")
+    parser.add_argument("--bits", "-b", nargs=1, default=8, help="Amount of bits each cell uses")
 
     args = parser.parse_args()
-    bits = args.bits  #  TODO: Doesn't work for me
-    f = open(args.fp, 'r')
+    bits = args.bits
+    f = open(args.filepath, 'r')
     code = f.read()
     f.close()
 
