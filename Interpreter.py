@@ -72,8 +72,8 @@ if __name__ == '__main__':
     parser.add_argument("--bits", "-b", "--interpreter-bits", nargs=1, default=8, help="Amount of bits each cell uses")
 
     args = parser.parse_args()
-    f = open(args.filepath, 'r')
-    code = f.read()
-    f.close()
+    with open(args.filepath, 'r') as f
+        code = f.read()
+        f.close()
 
     brainfuck(code, int(args.bits[0]))
