@@ -69,11 +69,10 @@ def brainfuck(program, bits=8):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("filepath")
-    parser.add_argument("--bits", "-b", "--interpreter-bits", nargs=1, default=8, help="Amount of bits each cell uses")
+    parser.add_argument("--bits", "-b", "--interpreter-bits", type=int, default=8, help="Amount of bits each cell uses")
 
     args = parser.parse_args()
-    with open(args.filepath, 'r') as f
+    with open(args.filepath, 'r') as f:
         code = f.read()
-        f.close()
 
-    brainfuck(code, int(args.bits[0]))
+    brainfuck(code, args.bits)
