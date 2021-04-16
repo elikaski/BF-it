@@ -46,7 +46,7 @@ def brainfuck(program, bits=8):
         elif command == '-':
             data[data_pointer] = (data.get(data_pointer, 0) - 1)
             if data[data_pointer] == -1:
-                data[data_pointer] = 255
+                data[data_pointer] = 2 ** bits - 1
         elif command == ',':
             data[data_pointer] = ord(sys.stdin.read(1)) % 256
         elif command == '.':
@@ -69,11 +69,11 @@ def brainfuck(program, bits=8):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("filepath")
-    parser.add_argument("--bits", "-b", "--interpreter-bits", default=8, help="Amount of bits each cell uses")
+    parser.add_argument("--bits", "-b", "--interpreter-bits", nargs=1, default=8, help="Amount of bits each cell uses")
 
     args = parser.parse_args()
     f = open(args.filepath, 'r')
     code = f.read()
     f.close()
 
-    brainfuck(code, args.bits)
+    brainfuck(code, int(args.bits[0]))
