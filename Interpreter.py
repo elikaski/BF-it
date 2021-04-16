@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("filepath")
-    parser.add_argument("--bits", "-b", nargs=1, default=8, help="Amount of bits each cell uses")
+    parser.add_argument("--bits", "-b", "--interpreter-bits", nargs=1, default=8, help="Amount of bits each cell uses")
 
     args = parser.parse_args()
     try:
