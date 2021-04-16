@@ -24,7 +24,7 @@ def create_jumps_dictionary(program):
     return res
 
 
-def brainfuck(program):
+def brainfuck(program, bits=8):
 
     jumps = create_jumps_dictionary(program)
     data = dict()
@@ -41,7 +41,7 @@ def brainfuck(program):
             data_pointer -= 1
         elif command == '+':
             data[data_pointer] = (data.get(data_pointer, 0) + 1)
-            if data[data_pointer] == (int(255 / 8) * bits) + 1:
+            if data[data_pointer] == (int(255 / 8) * int(bits)) + 1:
                 data[data_pointer] = 0
         elif command == '-':
             data[data_pointer] = (data.get(data_pointer, 0) - 1)
@@ -67,7 +67,7 @@ def brainfuck(program):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         print("Usage: '%s' <path_to_brainfuck_code_file>\nUsage: '%s' <path_to_brainfuck_file> -b <x-bit ints>\nUsage: '%s' <path_to_brainfuck_file> --bits <x-bit ints>" % (sys.argv[0], sys.argv[0], sys.argv[0]))
         exit(0)
 
@@ -76,9 +76,12 @@ if __name__ == '__main__':
     parser.add_argument("--bits", "-b", nargs=1, default=8, help="Amount of bits each cell uses")
 
     args = parser.parse_args()
-    bits = args.bits
+    try:
+        bits = args.bits[0]
+    except:
+        bits = 8
     f = open(args.filepath, 'r')
     code = f.read()
     f.close()
 
-    brainfuck(code)
+    brainfuck(code, bits)
