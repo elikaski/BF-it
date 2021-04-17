@@ -4,6 +4,7 @@ from .FunctionCompiler import FunctionCompiler
 from .Functions import check_function_exists, get_function_object, insert_function_object
 from .General import is_token_literal, get_literal_token_code, unpack_literal_tokens_to_array_dimensions
 from .Globals import get_global_variables_size, get_variable_size, get_variable_dimensions, insert_global_variable, create_variable_from_definition
+from .Structs import Struct, insert_struct_object, get_struct_object
 from .Lexical_analyzer import analyze
 from .LibraryFunctionCompiler import insert_library_functions
 from .Parser import Parser
@@ -42,6 +43,90 @@ class Compiler:
 
         function = FunctionCompiler(function_name, function_tokens)
         return function
+
+    def create_struct_object(self):
+        # struct syntax: STRUCT ID LBRACE ((INT | STRUCT ID) ID ((LBRACK NUM RBRACK)+)? SEMICOLON)+ RBRACE SEMICOLON
+
+        self.parser.check_next_tokens_are([Token.ID, Token.LBRACE])
+        self.parser.advance_token()  # point to ID
+        struct_name_token = self.parser.current_token()
+        struct_name = struct_name_token.data
+        self.parser.advance_token(amount=2)  # point to after LBRACE
+
+        struct_object = Struct(struct_name, struct_name_token)
+
+        defined_field_names = []
+
+        token = self.parser.current_token()
+        while token is not None and token.type in [Token.INT, Token.STRUCT]:
+            if token.type == Token.STRUCT:
+                self.parser.check_next_tokens_are([Token.ID, Token.ID])
+                field_struct_id = self.parser.next_token().data
+                field_name = self.parser.next_token(2).data
+
+                if self.parser.next_token(3).type == Token.LBRACK:
+                    self.parser.advance_token(amount=3)  # point to LBRACK
+                    dimensions = []  # element[i] holds the size of dimension[i]
+
+                    while self.parser.current_token().type == Token.LBRACK:
+                        self.parser.check_current_tokens_are([Token.LBRACK, Token.NUM, Token.RBRACK])
+                        dimensions.append(get_NUM_token_value(self.parser.next_token()))
+
+                        self.parser.advance_token(amount=3)  # skip LBRACK NUM RBRACK
+                else:
+                    dimensions = [1]
+                    self.parser.advance_token(amount=3)  # point to after ID
+
+                self.parser.check_current_tokens_are([Token.SEMICOLON])
+                self.parser.advance_token()  # point to after SEMICOLON
+
+                type_obj = {
+                    "type": Token.STRUCT,
+                    "size": get_struct_object(field_struct_id).size,
+                    "id": field_struct_id,
+                    "dimensions": dimensions
+                }
+            elif token.type == Token.INT:
+                self.parser.check_next_tokens_are([Token.ID])
+                field_name_token = self.parser.next_token()
+                field_name = field_name_token.data
+
+                if self.parser.next_token(2).type == Token.LBRACK:
+                    self.parser.advance_token(amount=2)  # point to LBRACK
+                    dimensions = []  # element[i] holds the size of dimension[i]
+
+                    while self.parser.current_token().type == Token.LBRACK:
+                        self.parser.check_current_tokens_are([Token.LBRACK, Token.NUM, Token.RBRACK])
+                        dimensions.append(get_NUM_token_value(self.parser.next_token()))
+
+                        self.parser.advance_token(amount=3)  # skip LBRACK NUM RBRACK
+                else:
+                    dimensions = [1]
+                    self.parser.advance_token(amount=2)  # point to after ID
+
+                self.parser.check_current_tokens_are([Token.SEMICOLON])
+                self.parser.advance_token()  # point to after SEMICOLON
+
+                type_obj = {
+                    "type": Token.INT,
+                    "size": 1,
+                    "dimensions": dimensions
+                }
+            else:
+                raise BFSyntaxError("Data type %s is not supported in field" % self.parser.current_token())
+
+            if field_name in defined_field_names:
+                raise BFSemanticError("Member '%s' is already defined" % field_name_token)
+            defined_field_names += [field_name]
+
+            struct_object.add_field(type_obj, field_name)
+
+            token = self.parser.current_token()
+
+        self.parser.check_current_tokens_are([Token.RBRACE, Token.SEMICOLON])
+        self.parser.advance_token(amount=2)  # point to after SEMICOLON
+
+        return struct_object
 
     def compile_global_variable_definition(self):
         # INT ID (ASSIGN NUM | (LBRACK NUM RBRACK)+ (ASSIGN LBRACE ... RBRACE)?)? SEMICOLON
@@ -111,7 +196,7 @@ class Compiler:
         """
         code = ''
         token = self.parser.current_token()
-        while token is not None and token.type in [Token.VOID, Token.INT, Token.SEMICOLON]:
+        while token is not None and token.type in [Token.VOID, Token.INT, Token.SEMICOLON, Token.STRUCT]:
             if token.type == Token.SEMICOLON:  # can have random semicolons ;)
                 self.parser.advance_token()
                 token = self.parser.current_token()
@@ -123,6 +208,9 @@ class Compiler:
                 insert_function_object(function)
             elif token.type is Token.INT and self.parser.next_token(next_amount=2).type in [Token.SEMICOLON, Token.ASSIGN, Token.LBRACK]:
                 code += self.compile_global_variable_definition()
+            elif token.type == Token.STRUCT:
+                struct_object = self.create_struct_object()
+                insert_struct_object(struct_object)
             else:
                 raise BFSyntaxError("Unexpected '%s' after '%s'. Expected '(' (function definition) or one of: '=', ';', '[' (global variable definition)" % (str(self.parser.next_token(next_amount=2)), str(self.parser.next_token())))
 

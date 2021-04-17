@@ -18,6 +18,7 @@ def analyze(text):
         ('int',     Token.INT),
         ('bool', Token.INT),  # treat bool as int
         ('char', Token.INT),  # treat char as int
+        ('struct', Token.STRUCT),
 
         ('true', Token.TRUE),
         ('false', Token.FALSE),
@@ -31,6 +32,7 @@ def analyze(text):
         ('for', Token.FOR),
         ('do', Token.DO),
         ('print', Token.PRINT),
+        ('sizeof', Token.SIZEOF),
         ('switch', Token.SWITCH),
         ('case', Token.CASE),
         ('default', Token.DEFAULT),
@@ -39,6 +41,7 @@ def analyze(text):
         (':', Token.COLON),
         (';', Token.SEMICOLON),
         (',', Token.COMMA),
+        (r'\.', Token.DOT),
 
         ('\(', Token.LPAREN),
         ('\)', Token.RPAREN),
