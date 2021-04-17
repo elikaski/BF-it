@@ -112,6 +112,9 @@ void array_assignment() {
     arr = {6, 5, 4, 3, 2, 1};
     for (int i = 0; i < 6; i++) printint(arr[i]); print("\n");
 
+    // can even assign strings
+    arr = "Hello!";
+    for (int i = 0; i < 6; i++) printchar(arr[i]); print("\n");
 }
 
 int main() {

@@ -3,7 +3,7 @@ from functools import reduce
 from .Exceptions import BFSyntaxError, BFSemanticError
 from .Functions import check_function_exists, get_function_object
 from .General import get_variable_dimensions_from_token, get_move_to_return_value_cell_code, get_print_string_code, get_variable_from_ID_token
-from .General import get_variable_size_from_token
+from .General import get_variable_size_from_token, get_literal_token_value, process_switch_cases, is_token_literal
 from .Globals import create_variable_from_definition, get_global_variables, get_variable_size, is_variable_array
 from .Node import NodeToken, NodeArraySetElement, NodeUnaryPrefix, NodeUnaryPostfix, NodeArrayGetElement, NodeFunctionCall, NodeArrayAssignment
 from .Node import NodeStructGetField, NodeStructSetField
@@ -193,18 +193,52 @@ class FunctionCompiler:
 
     def compile_array_assignment(self, token_id, struct_field=None):
         # int id[a][b][c]... = {1, 2, 3, ...};
+        # or int id[a][b][c]... = "\1\2\3...";
         # or int id[a][b][c]... = {{1, 2}, {3, 4}, ...};
         # or array assignment: id = {1, 2, 3, ...};
         self.parser.check_current_tokens_are([Token.ASSIGN])
         if self.parser.current_token().data != "=":
             raise BFSyntaxError("Unexpected %s when assigning array. Expected ASSIGN (=)" % self.parser.current_token())
 
-        assert self.parser.current_token().type == Token.ASSIGN and self.parser.current_token().data == "="
-        self.parser.check_current_tokens_are([Token.ASSIGN, Token.LBRACE])
-        self.parser.advance_token()  # skip to LBRACE
+        if self.parser.next_token().type not in [Token.LBRACE, Token.STRING]:
+            raise BFSyntaxError("Expected LBRACE or STRING at '%s'" % self.parser.next_token())
+
+        self.parser.advance_token()  # skip to LBRACE or STRING
         literal_tokens_list = self.parser.compile_array_initialization_list()
 
         return NodeArrayAssignment(self.ids_map_list[:], token_id, literal_tokens_list, struct_field)
+
+    def compile_variable_declaration(self):
+        self.parser.check_next_tokens_are([Token.ID])
+        self.parser.advance_token()  # skip "INT" (now points to ID)
+        assert self.parser.current_token().type == Token.ID
+
+        if self.parser.next_token().type == Token.SEMICOLON:  # INT ID SEMICOLON
+            self.parser.advance_token(2)  # skip ID SEMICOLON
+            return ''  # no code is generated here. code was generated for defining this variable when we entered the scope
+
+        elif self.parser.next_token().type == Token.ASSIGN and self.parser.next_token().data == "=":  # INT ID = EXPRESSION SEMICOLON
+            return self.compile_expression_as_statement()  # compile_expression_as_statement skips the SEMICOLON
+
+        elif self.parser.next_token().type == Token.LBRACK:  # INT ID (LBRACK NUM RBRACK)+ (= ARRAY_INITIALIZATION)? SEMICOLON
+            # array definition (int arr[2][3]...[];) or array definition and initialization (arr[2][3]...[] = {...};)
+            token_id = self.parser.current_token()
+            self.parser.advance_token()  # skip ID
+            while self.parser.current_token().type == Token.LBRACK:  # loop to skip to after last RBRACK ]
+                self.parser.check_current_tokens_are([Token.LBRACK, Token.NUM, Token.RBRACK])
+                self.parser.advance_token(3)  # skip LBRACK, NUM, RBRACK
+
+            if self.parser.current_token().type == Token.ASSIGN:  # initialization
+                initialization_node = self.compile_array_assignment(token_id)
+                code = initialization_node.get_code(self.current_stack_pointer()) + "<"  # discard expression value
+            else:
+                code = ''  # just array definition
+                # no code is generated here. code was generated for defining this variable when we entered the scope
+            self.parser.check_current_tokens_are([Token.SEMICOLON])
+            self.parser.advance_token()  # skip SEMICOLON
+            return code
+        else:
+            raise BFSyntaxError("Unexpected %s after %s" % (self.parser.next_token(), self.parser.current_token()))
 
     def add_ids_map(self):
         """
@@ -430,7 +464,7 @@ class FunctionCompiler:
 
             return NodeStructGetField(self.ids_map_list[:], token, field_name)
 
-        if token.type in [Token.NUM, Token.CHAR, Token.ID, Token.TRUE, Token.FALSE]:
+        if is_token_literal(token) or token.type == Token.ID:
             self.parser.advance_token()
             return NodeToken(self.ids_map_list[:], token=token)
 
@@ -702,7 +736,7 @@ class FunctionCompiler:
                 elif self.parser.next_token().type == Token.ASSIGN:
                     self.parser.advance_token()  # point to ASSIGN
 
-                    if self.parser.next_token().type == Token.LBRACE:  # ID DOT ID ASSIGN ARRAY_INITIALIZATION
+                    if self.parser.next_token().type in [Token.LBRACE, Token.STRING]:  # ID DOT ID ASSIGN ARRAY_INITIALIZATION
                         struct_object = get_struct_from_id_token(self.ids_map_list, id_token)
                         if not struct_object.is_field_array(field_name):
                             raise BFSemanticError("Trying to assign array to non-array field %s" % field_token)
@@ -717,7 +751,7 @@ class FunctionCompiler:
 
             elif self.parser.next_token().type == Token.ASSIGN:
                 self.parser.advance_token()  # point to after ID
-                if self.parser.next_token().type == Token.LBRACE:  # ID ASSIGN ARRAY_INITIALIZATION
+                if self.parser.next_token().type in [Token.LBRACE, Token.STRING]:  # ID ASSIGN ARRAY_INITIALIZATION
                     variable_ID = get_variable_from_ID_token(self.ids_map_list, id_token)
                     if not is_variable_array(variable_ID):
                         raise BFSemanticError("Trying to assign array to non-array variable %s" % id_token)
@@ -985,6 +1019,62 @@ class FunctionCompiler:
 
         return code
 
+    def compile_switch(self):  # switch (expression) { ((default | case literal): statements* break;? statements*)* }
+        self.parser.check_current_tokens_are([Token.SWITCH, Token.LPAREN])
+        self.parser.advance_token(amount=2)  # point to after LPAREN
+
+        self.increase_stack_pointer()  # use 1 temp cell before evaluating the expression
+        expression_code = self.compile_expression()
+        self.parser.check_current_tokens_are([Token.RPAREN, Token.LBRACE])
+        self.parser.advance_token(amount=2)  # point to after LBRACE
+
+        self.increase_stack_pointer()  # use 1 additional temp cell for indicating we need to execute a case
+        cases = list()  # list of tuples: (value/"default" (int or string), case_code (string), has_break(bool))
+
+        while self.parser.current_token().type in [Token.CASE, Token.DEFAULT]:  # (default | CASE literal) COLON statement* break;? statements*
+            if self.parser.current_token().type == Token.CASE:
+                self.parser.advance_token()  # skip CASE
+                constant_value_token = self.parser.current_token()
+                if not is_token_literal(constant_value_token):
+                    raise BFSemanticError("Switch case value is not a literal. Token is %s" % constant_value_token)
+
+                value = get_literal_token_value(constant_value_token)
+                if value in [case for (case, _, _) in cases]:
+                    raise BFSemanticError("Case %d already exists. Token is %s" % (value, constant_value_token))
+            else:
+                assert self.parser.current_token().type == Token.DEFAULT
+                value = "default"
+                if value in [case for (case, _, _) in cases]:
+                    raise BFSemanticError("default case %s already exists." % self.parser.current_token())
+
+            self.parser.check_next_tokens_are([Token.COLON])
+            self.parser.advance_token(amount=2)  # point to after COLON
+
+            inner_case_code = ""
+            while self.parser.current_token().type not in [Token.CASE, Token.DEFAULT, Token.RBRACE, Token.BREAK]:
+                inner_case_code += self.compile_statement(allow_declaration=False)  # not allowed to declare variables directly inside case
+
+            has_break = False
+            if self.parser.current_token().type == Token.BREAK:  # ignore all statements after break
+                self.parser.check_next_tokens_are([Token.SEMICOLON])
+                self.parser.advance_token(amount=2)  # skip break SEMICOLON
+                has_break = True
+                while self.parser.current_token().type not in [Token.CASE, Token.DEFAULT, Token.RBRACE]:
+                    self.compile_statement()  # advance the parser and discard the code
+            cases.append((value, inner_case_code, has_break))
+
+        if self.parser.current_token().type not in [Token.CASE, Token.DEFAULT, Token.RBRACE]:
+            raise BFSyntaxError("Expected case / default / RBRACE (}) instead of token %s" % self.parser.current_token())
+        self.parser.check_current_tokens_are([Token.RBRACE])
+        self.parser.advance_token()
+        self.decrease_stack_pointer(amount=2)
+
+        return process_switch_cases(expression_code, cases)
+
+    def compile_break(self):
+        # TODO: Make the break statement in scopes inside switch-case (including if/else), and for/do/while
+        raise NotImplementedError("Break statement found outside of switch case first scope.\nBreak is not currently implemented for while/for/do statements.\nToken is %s" % self.parser.current_token())
+
     def compile_for(self):
         # for (statement expression; expression) inner_scope_code   note: statement contains ;, and inner_scope_code can be scope { }
         # (the statement/second expression/inner_scope_code can be empty)
@@ -1008,6 +1098,7 @@ class FunctionCompiler:
         self.parser.advance_token(amount=2)  # skip for (
 
         manually_inserted_variable_in_for_definition = False
+        variable = None
         code = ''
 
         # =============== enter FOR scope ===============
@@ -1020,6 +1111,13 @@ class FunctionCompiler:
             self.insert_to_ids_map(variable)
             manually_inserted_variable_in_for_definition = True
             code += ">" * get_variable_size(variable)
+
+            show_side_effect_warning = self.parser.next_token(2).type != Token.ASSIGN
+            if self.parser.next_token(2).type == Token.LBRACK:
+                show_side_effect_warning = self.get_token_after_array_access(offset=1).type != Token.ASSIGN
+
+            if show_side_effect_warning:
+                print("[Warning] For loop variable '%s' isn't assigned to anything and may cause side effects" % self.parser.next_token())
 
         if self.parser.current_token().type == Token.LBRACE:  # statement is a scope
             raise BFSyntaxError("Unexpected scope inside for loop statement - %s" % self.parser.current_token())
@@ -1040,12 +1138,16 @@ class FunctionCompiler:
         inner_scope_code = ""
         if self.parser.current_token().type == Token.LBRACE:  # do we have {} as for's statement?
             # compiling <for> scope inside { }:
-            self.insert_scope_variables_into_ids_map()
+            if manually_inserted_variable_in_for_definition:
+                inner_scope_code += "<" * get_variable_size(variable)
+            inner_scope_code += self.insert_scope_variables_into_ids_map()
             inner_scope_code += self.compile_scope_statements()
         else:
             inner_scope_code += self.compile_statement()
         # =============== exit FOR scope ===============
-        self.exit_scope()
+        inner_scope_code += self.exit_scope()
+        if manually_inserted_variable_in_for_definition:
+            inner_scope_code += ">" * get_variable_size(variable)
         # ==============================================
 
         code += initial_statement
@@ -1063,40 +1165,16 @@ class FunctionCompiler:
 
         return code
 
-    def compile_statement(self):
+    def compile_statement(self, allow_declaration=True):
         # returns code that performs the current statement
         # at the end, the pointer points to the same location it pointed before the statement was executed
 
         token = self.parser.current_token()
-
         if token.type == Token.INT:  # INT ID ((= EXPRESSION) | ([NUM])+ (= ARRAY_INITIALIZATION)?)? SEMICOLON
-            self.parser.check_next_tokens_are([Token.ID])
-            self.parser.advance_token()  # skip "INT" (now points to ID)
-            assert self.parser.current_token().type == Token.ID
-
-            if self.parser.next_token().type == Token.SEMICOLON:  # INT ID SEMICOLON
-                self.parser.advance_token(2)  # skip ID SEMICOLON
-                return ''  # no code is generated here. code was generated for defining this variable when we entered the scope
-
-            elif self.parser.next_token().type == Token.LBRACK:  # INT ID (LBRACK NUM RBRACK)+ (= ARRAY_INITIALIZATION)? SEMICOLON
-                # array definition (int arr[2][3]...[];) or array definition and initialization (arr[2][3]...[] = {...})
-                token_id = self.parser.current_token()
-                self.parser.advance_token(1)  # skip ID
-                while self.parser.current_token().type == Token.LBRACK:  # loop to skip to after last RBRACK ]
-                    self.parser.check_current_tokens_are([Token.LBRACK, Token.NUM, Token.RBRACK])
-                    self.parser.advance_token(3)  # skip LBRACK, NUM, RBRACK
-                if self.parser.current_token().type == Token.ASSIGN:  # initialization
-                    initialization_node = self.compile_array_assignment(token_id)
-                    return initialization_node.get_code(self.current_stack_pointer()) + "<"  # discard expression value
-                # just definition
-                self.parser.check_current_tokens_are([Token.SEMICOLON])
-                self.parser.advance_token()  # skip SEMICOLON
-                return ''  # no code is generated here. code was generated for defining this variable when we entered the scope
-
-            elif self.parser.next_token().type == Token.ASSIGN and self.parser.next_token().data == "=":  # INT ID = EXPRESSION SEMICOLON
-                return self.compile_expression_as_statement()
-            else:
-                raise BFSyntaxError("Unexpected %s after %s" % (self.parser.next_token(), self.parser.current_token()))
+            if not allow_declaration:
+                raise BFSemanticError("Cannot define variable (%s) directly inside case. "
+                                      "Can define inside new scope {} or outside the switch statement" % token)
+            return self.compile_variable_declaration()
 
         elif token.type in [Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE]:  # ++ID;
             return self.compile_expression_as_statement()
@@ -1144,6 +1222,12 @@ class FunctionCompiler:
         elif token.type == Token.DO:
             return self.compile_do_while()
 
+        elif token.type == Token.SWITCH:
+            return self.compile_switch()
+
+        elif token.type == Token.BREAK:
+            return self.compile_break()
+
         elif token.type == Token.RETURN:
             return self.compile_return()
 
@@ -1154,6 +1238,9 @@ class FunctionCompiler:
             # empty statement
             self.parser.advance_token()  # skip ;
             return ""
+
+        elif token.type in [Token.CASE, Token.DEFAULT]:
+            raise BFSyntaxError("%s not inside a switch statement" % token)
 
         raise NotImplementedError(token)
 

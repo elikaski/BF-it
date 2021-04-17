@@ -2,7 +2,7 @@
 from .Exceptions import BFSyntaxError, BFSemanticError
 from .FunctionCompiler import FunctionCompiler
 from .Functions import check_function_exists, get_function_object, insert_function_object
-from .General import get_NUM_token_value, get_set_cell_value_code, get_literal_token_code, unpack_literal_tokens_to_array_dimensions
+from .General import get_NUM_token_value, is_token_literal, get_literal_token_code, unpack_literal_tokens_to_array_dimensions
 from .Globals import get_global_variables_size, get_variable_size, get_variable_dimensions, insert_global_variable, create_variable_from_definition
 from .Structs import Struct, insert_struct_object, get_struct_object
 from .Lexical_analyzer import analyze
@@ -149,9 +149,11 @@ class Compiler:
                 code = (code + '>') * get_variable_size(variable)  # advance to after this variable
                 return code
             elif self.parser.current_token().type == Token.ASSIGN and self.parser.current_token().data == "=":
-                # array definition and initialization - INT ID (LBRACK NUM RBRACK)+ ASSIGN (LBRACE ... RBRACE)+ SEMICOLON
+                # array definition and initialization - INT ID (LBRACK NUM RBRACK)+ ASSIGN ((LBRACE ... RBRACE)+|STRING) SEMICOLON
                 self.parser.advance_token()  # skip ASSIGN
-                self.parser.check_current_tokens_are([Token.LBRACE])
+
+                if self.parser.current_token().type not in [Token.LBRACE, Token.STRING]:
+                    raise BFSyntaxError("Expected LBRACE or STRING at '%s'" % self.parser.current_token())
 
                 literal_tokens_list = self.parser.compile_array_initialization_list()
                 self.parser.check_current_tokens_are([Token.SEMICOLON])
@@ -175,7 +177,7 @@ class Compiler:
                 raise BFSyntaxError("Unexpected %s when initializing global variable. Expected ASSIGN (=)" % self.parser.current_token())
             self.parser.advance_token()  # skip ASSIGN
 
-            if self.parser.current_token().type not in [Token.NUM, Token.CHAR, Token.TRUE, Token.FALSE]:
+            if not is_token_literal(self.parser.current_token()):
                 raise BFSemanticError("Unexpected '%s'. expected literal (NUM | CHAR | TRUE | FALSE )" % str(self.parser.current_token()))
 
             code += get_literal_token_code(self.parser.current_token())
