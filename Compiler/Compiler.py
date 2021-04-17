@@ -66,7 +66,9 @@ class Compiler:
             elif self.parser.current_token().type == Token.ASSIGN and self.parser.current_token().data == "=":
                 # array definition and initialization - INT ID (LBRACK NUM RBRACK)+ ASSIGN ((LBRACE ... RBRACE)+|STRING) SEMICOLON
                 self.parser.advance_token()  # skip ASSIGN
-                assert self.parser.current_token().type in [Token.LBRACE, Token.STRING]
+
+                if self.parser.current_token().type not in [Token.LBRACE, Token.STRING]:
+                    raise BFSyntaxError("Expected LBRACE or STRING at '%s'" % self.parser.current_token())
 
                 literal_tokens_list = self.parser.compile_array_initialization_list()
                 self.parser.check_current_tokens_are([Token.SEMICOLON])

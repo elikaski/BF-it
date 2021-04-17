@@ -86,7 +86,7 @@ class Parser:
         self.check_next_tokens_are(tokens_list, starting_index=self.current_token_index - 1)
 
     def compile_array_initialization_list(self):
-        # {1, 2, 3, ...} or {array_initialization_list, array_initialization_list, array_initialization_list, ...}
+        # {1, 2, 3, ...} or {array_initialization_list, array_initialization_list, array_initialization_list, ...} or string
         # parses the definition and returns a list (of list of list ....) of literal tokens (NUM, CHAR, TRUE, FALSE)
 
         list_tokens = []

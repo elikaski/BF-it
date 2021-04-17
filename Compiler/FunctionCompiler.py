@@ -178,7 +178,8 @@ class FunctionCompiler:
         if self.parser.current_token().data != "=":
             raise BFSyntaxError("Unexpected %s when assigning array. Expected ASSIGN (=)" % self.parser.current_token())
 
-        assert self.parser.next_token().type in [Token.LBRACE, Token.STRING]
+        if self.parser.next_token().type not in [Token.LBRACE, Token.STRING]:
+            raise BFSyntaxError("Expected LBRACE or STRING at '%s'" % self.parser.next_token())
 
         self.parser.advance_token()  # skip to LBRACE or STRING
         literal_tokens_list = self.parser.compile_array_initialization_list()
