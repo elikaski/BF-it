@@ -4,7 +4,7 @@ from .FunctionCompiler import FunctionCompiler
 from .Functions import check_function_exists, get_function_object, insert_function_object
 from .General import is_token_literal, get_literal_token_code, unpack_literal_tokens_to_array_dimensions
 from .Globals import get_global_variables_size, get_variable_size, get_variable_dimensions, insert_global_variable, create_variable_from_definition
-from .Lexical_analyzer import analyze
+from .Lexical_analyzer import analyze, optimize
 from .LibraryFunctionCompiler import insert_library_functions
 from .Parser import Parser
 from .Token import Token
@@ -16,8 +16,11 @@ And finally, return the code of the main function
 
 
 class Compiler:
-    def __init__(self, code):
-        self.parser = Parser(analyze(code))
+    def __init__(self, code, optimize_code=False):
+        tokens = analyze(code)
+        if optimize_code:
+            optimize(tokens)
+        self.parser = Parser(tokens)
 
     # global variables and functions
     def create_function_object(self):
@@ -144,12 +147,13 @@ class Compiler:
         return code
 
 
-def compile(code):
+def compile(code, optimize_code=False):
     """
     :param code:  C-like code (string)
+    :param optimize_code:  syntax optimization (bool)
     :return code:  Brainfuck code (string)
     """
-    compiler = Compiler(code)
+    compiler = Compiler(code, optimize_code)
     brainfuck_code = compiler.compile()
     return brainfuck_code
 

@@ -13,6 +13,7 @@ def process_args():
     parser.add_argument("--output", "-o", metavar="output_file", nargs=1, help="Path to output Brainfuck file")
     parser.add_argument("--run", "-r", action="store_true", help="Run the Brainfuck file after compilation")
     parser.add_argument("--minify", "-m", action="store_true", help="Minifies the compiled code")
+    parser.add_argument("--optimize", "-opt", action="store_true", help="syntax optimization")
 
     args = parser.parse_args()
 
@@ -25,20 +26,22 @@ def process_args():
 
     run_file = args.run
     minify_file = args.minify
+    optimize = args.optimize
 
-    return input_file, output_file, run_file, minify_file
+    return input_file, output_file, run_file, minify_file, optimize
 
 
-def compile_file(input_file, output_file, run, minify_file):
+def compile_file():
+    input_file, output_file, run_file, minify_bf_code, optimize_code = process_args()
     print("Compiling file '%s'..." % input_file)
 
     with open(input_file, "rb") as f:
         code = f.read().decode("utf8")
 
-    brainfuck_code = Compiler.compile(code)
+    brainfuck_code = Compiler.compile(code, optimize_code)
     brainfuck_code += "\n"
 
-    if minify_file:
+    if minify_bf_code:
         brainfuck_code = Minify.minify(brainfuck_code)
 
     with open(output_file, "wt") as f:
@@ -46,11 +49,10 @@ def compile_file(input_file, output_file, run, minify_file):
 
     print("Compiled successfully to '%s'" % output_file)
 
-    if run:
+    if run_file:
         print("Running compiled code...")
         Interpreter.brainfuck(brainfuck_code)
 
 
 if __name__ == '__main__':
-    input_file, output_file, run_file, minify_file = process_args()
-    compile_file(input_file, output_file, run_file, minify_file)
+    compile_file()

@@ -52,12 +52,18 @@ class Token:
     COMMENT = "COMMENT"
     UNIDENTIFIED = "UNIDENTIFIED"
 
-    def __init__(self, type, line, column, data=None):
+    def __init__(self, type, line, column, data=None, original_tokens=None):
         self.type = type
         self.line = line
         self.column = column
         self.data = data
+        self.original_tokens = original_tokens
 
     def __str__(self):
-        return self.type + ((" " + self.data) if self.data is not None else "") + \
-               " (line %s column %s)" % (self.line, self.column)
+        result = self.type
+        if self.data:
+            result += " " + self.data
+        result += " (line %s column %s)" % (self.line, self.column)
+        if self.original_tokens:
+            result += " (original tokens: " + ", ".join([str(t) for t in self.original_tokens]) + ")"
+        return result
