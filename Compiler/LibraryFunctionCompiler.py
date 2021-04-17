@@ -1,11 +1,13 @@
 from .Functions import insert_function_object
+from .Globals import get_data_type_size
 from .Token import Token
 
 
 class LibraryFunctionCompiler:
-    def __init__(self, name, type, parameters, code):
+    def __init__(self, name, return_type, parameters, code):
         self.name = name
-        self.type = type
+        self.return_type = return_type
+        self.return_size = get_data_type_size(return_type)
         self.parameters = parameters
         self.code = code
 
@@ -61,10 +63,9 @@ def get_readint_code():
 
 
 def get_printint_code():
-    # return_cell value_to_print_cell
+    # value_to_print_cell
 
-    code = ">"  # point to value_to_print cell
-    code += ">[-]" * 8 + "<" * 8  # zero some cells
+    code = ">[-]" * 8 + "<" * 8  # zero some cells
 
     code += ">++++++++++<"  # div amount
     code += "[->-[>+>>]>[+[<+>-]>+>>]<<<<<]"  # value_to_print/10
@@ -97,7 +98,6 @@ def get_printint_code():
     code += "[-]"  # zero the third digit
     code += "<<"  # point to value_to_print_cell which is 0
 
-    code += "<"  # point to return_cell
     return code
 
 
@@ -108,8 +108,8 @@ def get_readchar_code():
 
 
 def get_printchar_code():
-    # point to parameter, output it, and then point back to "return value cell"
-    code = ">.<"
+    # output parameter
+    code = "."
     return code
 
 

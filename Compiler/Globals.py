@@ -11,6 +11,11 @@ And related functions
 
 global_variables = list()  # Global list of global variables
 
+data_sizes = {
+    Token.INT: 1,
+    Token.VOID: 0
+}
+
 
 # variables
 def get_global_variables():
@@ -50,6 +55,10 @@ def get_variable_dimensions(variable):
 
 def is_variable_array(variable):
     return variable.dimensions != [1]
+
+
+def get_data_type_size(data_type):
+    return data_sizes[data_type]
 
 
 def create_variable_from_definition(parser, index=None, advance_tokens=False):

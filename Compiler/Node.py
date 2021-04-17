@@ -212,18 +212,20 @@ class NodeFunctionCall(Node):
         self.parameters = parameters
 
     def get_code(self, current_pointer, *args, **kwargs):
-        code = '[-]>'  # return_value_cell=0
+        return_size = self.function_to_call.return_size
+
+        code = '[-]>' * return_size  # return_value_cell=0
 
         # evaluate parameters from left to right, and put them on the "stack" in that order
         # after each parameter code, the pointer points to the next available cell (one after the parameter)
         for i, parameter in enumerate(self.parameters):
-            code += parameter.get_code(current_pointer+1+i)  # evaluate each parameter at its cell offset (starting at one after return_value_cell)
+            code += parameter.get_code(current_pointer + return_size + i)  # evaluate each parameter at its cell offset (starting at one after return_value_cell)
 
         # at this point we point to one after the last parameter
         code += "<" * len(self.parameters)  # point back to first parameter
-        code += "<"  # point to return_value_cell
+        code += "<" * return_size  # point to return_value_cell
         code += self.function_to_call.get_code(current_stack_pointer=current_pointer)  # after this we point to return value cell
-        code += ">"  # point to next available cell (one after return value)
+        code += ">"  # point to next available cell
         return code
 
 

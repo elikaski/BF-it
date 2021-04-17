@@ -48,10 +48,9 @@ class Compiler:
         # struct syntax: STRUCT ID LBRACE ((INT | STRUCT ID) ID ((LBRACK NUM RBRACK)+)? SEMICOLON)+ RBRACE SEMICOLON
 
         self.parser.check_next_tokens_are([Token.ID, Token.LBRACE])
-        self.parser.advance_token()  # point to ID
-        struct_name_token = self.parser.current_token()
+        struct_name_token = self.parser.next_token()
         struct_name = struct_name_token.data
-        self.parser.advance_token(amount=2)  # point to after LBRACE
+        self.parser.advance_token(amount=3)  # point to after LBRACE
 
         struct_object = Struct(struct_name, struct_name_token)
 
@@ -62,7 +61,8 @@ class Compiler:
             if token.type == Token.STRUCT:
                 self.parser.check_next_tokens_are([Token.ID, Token.ID])
                 field_struct_id = self.parser.next_token().data
-                field_name = self.parser.next_token(2).data
+                field_name_token = self.parser.next_token(2)
+                field_name = field_name_token.data
 
                 if self.parser.next_token(3).type == Token.LBRACK:
                     self.parser.advance_token(amount=3)  # point to LBRACK

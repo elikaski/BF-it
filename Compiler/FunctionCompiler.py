@@ -4,7 +4,7 @@ from .Exceptions import BFSyntaxError, BFSemanticError
 from .Functions import check_function_exists, get_function_object
 from .General import get_variable_dimensions_from_token, get_move_to_return_value_cell_code, get_print_string_code, get_variable_from_ID_token
 from .General import get_variable_size_from_token, get_literal_token_value, process_switch_cases, is_token_literal
-from .Globals import create_variable_from_definition, get_global_variables, get_variable_size, is_variable_array
+from .Globals import create_variable_from_definition, get_global_variables, get_variable_size, is_variable_array, get_data_type_size
 from .Node import NodeToken, NodeArraySetElement, NodeUnaryPrefix, NodeUnaryPostfix, NodeArrayGetElement, NodeFunctionCall, NodeArrayAssignment
 from .Node import NodeStructGetField, NodeStructSetField
 from .Parser import Parser
@@ -33,10 +33,11 @@ class FunctionCompiler:
         self.tokens = tokens
         self.parser = Parser(self.tokens)
         self.ids_map_list = list()
-        self.type = None
+        self.return_type = None
+        self.return_size = None
+        self.return_value_cell = None  # will be set on every call to this function
         self.parameters = None
         self.process_function_definition()  # sets type and parameters
-        self.return_value_cell = None  # will be set on every call to this function
 
     """
     ids_map_list is a list of named tuples. Each tuple represents a scope, and holds 2 items:
@@ -63,7 +64,8 @@ class FunctionCompiler:
         parameters = self.get_function_parameters_declaration()
         # parser now points to LBRACE = beginning of function scope
 
-        self.type = function_return_type
+        self.return_type = function_return_type.type
+        self.return_size = get_data_type_size(self.return_type)
         self.parameters = parameters
 
     def get_code(self, current_stack_pointer):
@@ -85,7 +87,7 @@ class FunctionCompiler:
         # new stack pointer should be at least that size
         assert self.current_stack_pointer() <= current_stack_pointer
         self.return_value_cell = current_stack_pointer
-        self.set_stack_pointer(current_stack_pointer+1)  # make room for return_value cell. next available cell is the next one after it.
+        self.set_stack_pointer(current_stack_pointer + self.return_size)  # make room for return_value cell. next available cell is the next one after it.
         function_code = self.compile_function_scope(self.parameters)
         self.remove_ids_map()  # Global variables
         return function_code
@@ -267,14 +269,6 @@ class FunctionCompiler:
         ids_map.next_available_cell += get_variable_size(variable)
         ids_map.IDs_dict[variable.name] = variable
 
-    def reserve_cell_in_ids_map(self):
-        """
-        reserve cell by increasing the "pointer" of the next available cell
-        this is used for making room for return_value cell
-        """
-        ids_map = self.ids_map_list[0]
-        ids_map.next_available_cell += 1
-
     def variables_dict_size(self, variables_dict_index):
         variables_dict = self.ids_map_list[variables_dict_index].IDs_dict
 
@@ -359,7 +353,7 @@ class FunctionCompiler:
         for parameter in parameters:
             self.insert_to_ids_map(parameter)
 
-        code = '>'  # skip return_value_cell
+        code = ">" * self.return_size  # skip return_value_cell
         code += self.insert_scope_variables_into_ids_map()
         # this inserts scope variables AND moves pointer right, with the amount of BOTH parameters and scope variables
 
@@ -871,6 +865,9 @@ class FunctionCompiler:
     def compile_return(self):
         # this assumes that the return is the last statement in the function
 
+        if self.return_type == Token.VOID:
+            raise BFSemanticError("Unable to return from a function has a return type of VOID at '%s'" % self.parser.current_token())
+
         self.parser.advance_token()  # skip return
         if self.parser.current_token().type == Token.SEMICOLON:
             # return;
@@ -1301,9 +1298,16 @@ class FunctionCompiler:
 
         assert self.parser.current_token().type == Token.LBRACE
 
+        # print(self.return_type, self.return_size)
+        # print(self.current_stack_pointer())
+
         code = self.enter_function_scope(parameters)
+        # print(self.current_stack_pointer())
         code += self.compile_scope_statements()
+        # print(self.current_stack_pointer())
         code += self.exit_scope()
-        code += "<"  # point to return_value_cell
+        # print(self.current_stack_pointer())
+        # print()
+        code += "<" * self.return_size  # point to return_value_cell
 
         return code
