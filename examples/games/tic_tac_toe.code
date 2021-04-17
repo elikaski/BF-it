@@ -16,20 +16,26 @@ char read_one_char() {
 }
 
 bool ask_play_again() {
-    bool input_valid = false;
+    bool input_valid;
     bool result;
-    while (!input_valid) {
+    do {
         print("Would you like to play again? Y/N: ");
         char input = read_one_char();
-        if (input == 'Y' || input == 'y') {
-            input_valid = true;
-            result = true;
+        switch (input) {
+            case 'Y':
+            case 'y':
+                input_valid = true;
+                result = true;
+                break;
+            case 'N':
+            case 'n':
+                input_valid = true;
+                result = false;
+                break;
+            default:
+                input_valid = false;
         }
-        if (input == 'N' || input == 'n') {
-            input_valid = true;
-            result = false;
-        }
-    }
+    } while (!input_valid);
     return result;
 }
 
@@ -44,8 +50,7 @@ void print_board() {
 }
 
 void init_board() {
-    for (int i = 0; i < 9; i++)
-        board[i] = ' ';
+    board = "         ";
 }
 
 char check_win_or_tie() {
@@ -68,15 +73,15 @@ char check_win_or_tie() {
 }
 
 int get_next_move(bool player_X_turn) {
-    int move = 0;
-    while (move < 1 || move > 9 || board[move-1] != ' ') { // humans count from 1 :)
+    int move;
+    do {
         print("Player ");
         if (player_X_turn) printchar('X');
         else               printchar('O');
-
         print(" turn:\n");
+
         move = readint();
-    }
+    } while (move < 1 || move > 9 || board[move-1] != ' ');  // humans count from 1 :)
     return move;
 }
 
@@ -88,25 +93,25 @@ int main() {
         bool game_over = false;
         bool player_X_turn = true;
         int moves_so_far = 0;
-
         init_board();
-        print_board();
 
-        while (!game_over) {
+        do {
+            print_board();
+
             int move = get_next_move(player_X_turn);
             if (player_X_turn)
                 board[move-1]='X';
             else
                 board[move-1]='O';
-            move = 0;
+
             player_X_turn = !player_X_turn;
             moves_so_far++;
 
-            print_board();
             char winner = check_win_or_tie();
 
             // ---------- announce result ----------
             if (winner != ' ') {
+                print_board();
                 print("Player ");
                 printchar(winner);
                 print(" Won!\n");
@@ -115,7 +120,7 @@ int main() {
                 print("Game is a tie!\n");
                 game_over = true;
             }
-        }
+        } while (!game_over);
 
         if (ask_play_again() == true)
             print("Great! Let's start a new game...\n");

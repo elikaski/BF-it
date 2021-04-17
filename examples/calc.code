@@ -17,20 +17,21 @@ int get_operation() {
     print("3 - MUL\n");
     print("4 - DIV\n");
     print("5 - MOD\n");
+    print("6 - XOR\n");
 
     int op = readint();
     return op;
 }
 
 int get_result(int a, int b, int op) {
-    int res;
-    if (op == 1) { res = a + b; }
-    if (op == 2) { res = a - b; }
-    if (op == 3) { res = a * b; }
-    if (op == 4) { res = a / b; }
-    if (op == 5) { res = a % b; }
-
-    return res;
+    switch (op) {
+        case 1: return a+b; break;
+        case 2: return a-b; break;
+        case 3: return a*b; break;
+        case 4: return a/b; break;
+        case 5: return a%b; break;
+        case 6: return a^b; break;
+    }
 }
 
 int main() {
@@ -43,7 +44,6 @@ int main() {
 
         print("Result is: ");
         printint(res);
-        print("\n");
-        print("==============================================\n");
+        print("\n==============================================\n");
     }
 }
