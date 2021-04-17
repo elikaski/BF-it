@@ -1,14 +1,22 @@
+int foo() {
+    print("----ERROR! This should never be printed!!!----\n");
+    return 1;
+}
+
 int main() {
-	// there is no short-circuit boolean evaluation
+	// boolean evaluation is short-circuit
 	int x = 5;
 	printint(x == 5);
 
-	if (true || x++) {} // x++ is evaluated even though it is not necessary for the boolean result
-	printint(x == 6);
+	if (true || x++) {} // x++ is not evaluated
+	printint(x == 5);
 
-	if (false && x++) {} // again x++ is evaluated
-	printint(x == 7);
+	if (false && x++) {} // again x++ is not evaluated
+	printint(x == 5);
 
+    // similarly,
+    if (1 || foo()) print("1"); // foo will never be called
+    if (0 && foo()) foo();      // foo will never be called
 
 	// order of evaluation
 	// expressions are evaluated left-to-right 

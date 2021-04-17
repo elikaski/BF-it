@@ -990,65 +990,6 @@ def get_op_between_literals_code(op_token, right_token=None):
 
         return code
 
-    elif op_token.type == Token.AND:
-        # a, b, temp
-        code = ">>[-]"  # zero temp
-        code += "<<"  # point to a
-        code += "["  # if a is non-zero
-
-        code += ">"  # point to b
-        code += "["  # if b is non-zero
-        code += ">+"  # temp = 1
-        code += "<[-]"  # zero b
-        code += "]"  # end if
-
-        code += "<"  # point to a
-        code += "[-]"  # zero a
-        code += "]"  # end if
-
-        code += ">>"  # point to temp
-        code += "["  # if non zero
-        code += "<<+"  # a = 1
-        code += ">>-"  # temp = 0
-        code += "]"  # end if
-
-        code += "<"  # point to b (next available cell)
-
-        return code
-
-    elif op_token.type == Token.OR:
-        # a, b, temp
-        code = ">>[-]"  # zero temp
-        code += "<<"  # point to a
-        code += "["  # if a is non-zero
-
-        code += ">"  # point to b
-        code += "[-]"  # zero b
-        code += ">"  # point to temp
-        code += "+"  # temp = 1
-        code += "<<"  # point to a
-        code += "[-]"  # zero a
-        code += "]"  # end if
-
-        code += ">"  # point to b
-        code += "["  # if b is non-zero
-        code += ">"  # point to temp
-        code += "+"  # temp = 1
-        code += "<"  # point to b
-        code += "[-]"  # zero b
-        code += "]"  # end if
-
-        code += ">"  # point to temp
-        code += "["  # if temp == 1
-        code += "<<+"  # a = 1
-        code += ">>"  # point to temp
-        code += "-"  # zero temp
-        code += "]"  # end if
-
-        code += "<"  # point to b (next available cell)
-
-        return code
-
     elif op == "<<":
         # a, b, temp
 
@@ -1116,6 +1057,62 @@ def get_op_between_literals_code(op_token, right_token=None):
         return code
 
     raise NotImplementedError
+
+
+def get_op_boolean_operator_code(node, current_pointer):
+    # short-circuit evaluation of AND and OR
+    assert node.token.type in [Token.AND, Token.OR]
+
+    if node.token.type == Token.AND:
+        # result, operand
+        code = "[-]"  # zero result
+        code += ">"  # point to next cell
+        code += node.left.get_code(current_pointer + 1)  # evaluate first operand
+        code += "<"  # point to first operand
+        code += "["  # if it is non-zero
+
+        code += "[-]"  # zero first operand
+        code += node.right.get_code(current_pointer + 1)  # evaluate second operand
+        code += "<"  # point to second operand
+        code += "["  # if it is non-zero
+        code += "<+>"  # result = 1
+        code += "[-]"  # zero second operand
+        code += "]"  # end if
+
+        code += "]"  # end if
+        # now we point to one after result (next available cell)
+        return code
+
+    elif node.token.type == Token.OR:
+        # result, check_second_operand/second_operand, first_operand
+        code = "[-]"  # zero result
+        code += ">"  # point to check_second_operand
+        code += "[-]+"  # check_second_operand = 1
+        code += ">"  # point to next cell
+        code += node.left.get_code(current_pointer + 2)  # evaluate first operand
+        code += "<"  # point to first operand
+
+        code += "["  # if it is non-zero
+        code += "<<+"  # result = 1
+        code += ">-"  # check_second_operand = 0
+        code += ">[-]"  # zero first operand
+        code += "]"  # end if
+
+        code += "<"  # point to check_second_operand
+        code += "["  # if check_second_operand
+        code += node.right.get_code(current_pointer + 1)  # evaluate second operand
+        code += "<"  # point to second operand
+        code += "["  # if it is non-zero
+        code += "<+>"  # result = 1
+        code += "[-]"  # zero second operand
+        code += "]"  # end if
+        code += "]"  # end if
+
+        # now we point to one after result (next available cell)
+        return code
+
+    raise NotImplementedError
+
 
 
 def get_print_string_code(string):

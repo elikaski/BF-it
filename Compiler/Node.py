@@ -4,7 +4,7 @@ from .General import get_move_left_index_cell_code, get_move_right_index_cells_c
 from .General import get_offset_to_variable, get_variable_dimensions_from_token
 from .General import get_op_between_literals_code, get_literal_token_code, get_token_ID_code
 from .General import get_unary_prefix_op_code, get_unary_postfix_op_code, is_token_literal
-from .General import unpack_literal_tokens_to_array_dimensions
+from .General import unpack_literal_tokens_to_array_dimensions, get_op_boolean_operator_code
 from .Token import Token
 
 """
@@ -60,7 +60,7 @@ class NodeToken(Node):
             else:
                 return get_literal_token_code(self.token)
 
-        elif self.token.type in [Token.BINOP, Token.RELOP, Token.AND, Token.OR, Token.BITWISE_SHIFT, Token.BITWISE_AND, Token.BITWISE_OR, Token.BITWISE_XOR]:
+        elif self.token.type in [Token.BINOP, Token.RELOP, Token.BITWISE_SHIFT, Token.BITWISE_AND, Token.BITWISE_OR, Token.BITWISE_XOR]:
             code = self.left.get_code(current_pointer)
             code += self.right.get_code(current_pointer + 1)
             code += "<<"  # point to the first operand
@@ -71,6 +71,9 @@ class NodeToken(Node):
 
             code += get_op_between_literals_code(self.token, right_token)
             return code
+
+        elif self.token.type in [Token.AND, Token.OR]:  # short-circuit evaluation treated differently
+            return get_op_boolean_operator_code(self, current_pointer)
 
         elif self.token.type == Token.ASSIGN:
             assert self.left.token.type == Token.ID

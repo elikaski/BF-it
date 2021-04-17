@@ -15,7 +15,7 @@
 // Uses (cond1) + (cond2) instead of (cond1 || cond2). This is faster
 // For Loops uses (i - num) instead of (i < num). Same as (i != num). Much faster and smaller.
 // Uses (var - num) instead of (var != num). Smaller and faster
-// Nested IFs are smaller and faster than && since there is no short-circuit boolean evaluation
+// Nested IFs are smaller and faster than && since there is no short-circuit boolean evaluation // todo - short-circuit evaluation is added, need to re-examine
 // Uses (var%%) to clear while using the data
 // Arrays access on the first row is omitted. (arr[0][2]) Internal code = (0*4 + 2) (arr[2]) Internal code = (2)
 // If both indexes on the a array index expression is 0, then it's omitted. (arr[0][0]) -> (arr)
