@@ -39,9 +39,9 @@ def run():
         text = Label(save_prompt, text='Please save your code')
         text.pack()
         return
-    buildcommand = f'python BF-it.py {file_path}'
+    buildcommand = f'python3 BF-it.py {file_path}'
     os.system(buildcommand)
-    command = f'python Interpreter.py {file_path}'
+    command = f'python3 Interpreter.py {file_path}'
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, error = process.communicate()
     code_output.insert('1.0', output)
