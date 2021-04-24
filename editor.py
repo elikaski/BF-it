@@ -1,4 +1,5 @@
-import BFit
+from Compiler import Compiler
+import Interpreter
 from tkinter import *
 from tkinter.filedialog import asksaveasfilename, askopenfilename
 import subprocess
@@ -40,7 +41,7 @@ def run():
         text = Label(save_prompt, text='Please save your code')
         text.pack()
         return
-    compile_file(file_path)
+    Compiler.compile(code)
     command = f'python3 Interpreter.py {file_path}'
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, error = process.communicate()
