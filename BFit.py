@@ -31,10 +31,8 @@ def process_args():
     return input_file, output_file, run_file, minify_file, optimize
 
 
-def compile_file(fn=None):
+def compile_file():
     input_file, output_file, run_file, minify_bf_code, optimize_code = process_args()
-    if fn is not None:
-        input_file = fn
     print("Compiling file '%s'..." % input_file)
 
     with open(input_file, "rb") as f:
