@@ -3,7 +3,7 @@ import Interpreter
 from tkinter import *
 from tkinter.filedialog import asksaveasfilename, askopenfilename
 import subprocess
-import os
+import sys
 
 compiler = Tk()
 compiler.title('BF-it Editor')
@@ -42,8 +42,20 @@ def run():
         text.pack()
         return
     Compiler.compile(code)
-    command = f'python3 Interpreter.py {file_path}'
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    try:
+        command = f'python Interpreter.py {file_path}'
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    except:
+        try:
+            command = f'python3 Interpreter.py {file_path}'
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+         except:
+            try:
+                command = f'python3.{sys.version[1]} Interpreter.py {file_path}'
+                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            except:
+                raise Exception("Python is not installed correctly")
+                sys.exit(1)
     output, error = process.communicate()
     code_output.insert('1.0', output)
     code_output.insert('1.0',  error)
