@@ -41,24 +41,9 @@ def run():
         text = Label(save_prompt, text='Please save your code')
         text.pack()
         return
-    Compiler.compile(code)
-    try:
-        command = f'python Interpreter.py {file_path}'
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    except:
-        try:
-            command = f'python3 Interpreter.py {file_path}'
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-         except:
-            try:
-                command = f'python3.{sys.version[1]} Interpreter.py {file_path}'
-                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-            except:
-                raise Exception("Python is not installed correctly")
-                sys.exit(1)
-    output, error = process.communicate()
+    compiled = Compiler.compile(code)
+    output = Interpreter.brainfuck(compiled)
     code_output.insert('1.0', output)
-    code_output.insert('1.0',  error)
 
 
 menu_bar = Menu(compiler)
