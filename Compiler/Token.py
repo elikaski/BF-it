@@ -30,6 +30,7 @@ class Token:
     RBRACK = "RBRACK"
 
     ASSIGN = "ASSIGN"
+    TERNARY = "TERNARY"
     RELOP = "RELOP"
     BINOP = "BINOP"
     INCREMENT = "INCREMENT"

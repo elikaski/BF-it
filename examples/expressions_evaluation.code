@@ -1,7 +1,8 @@
 // examples of usage of assignment (=, +=, -=, *=, /=, %=)
-// and unary operations (++, --, **, %%, !)
+// unary operations (++, --, **, %%, !)
+// and ternary operation (a ? b : c)
 
-int main() {
+int test_assignment_and_unary_operations() {
 	// basic assignment
 	int x = 27;
 	printint(x == 27);
@@ -133,4 +134,124 @@ int main() {
 
 	// additionally, it can be used on literals as well
 	printint(!true == false);
+}
+
+int foo() {
+    print("THIS SHOULD NEVER BE PRINTED!");
+}
+
+int is_three(int n) {
+    return n == 0 ? 0 :
+           n == 1 ? 0 :
+           n == 2 ? 0 :
+           n == 3 ? 1 :
+           n == 4 ? 0 :
+           n == 5 ? 0 :
+           n == 5 ? foo() :   // should always be false (otherwise we "return" in the previous line)
+           n == 6 ? 0 :
+           n < 10 ? 0 :
+           foo();
+}
+
+int always_3() {
+    return 3;
+}
+
+void test_ternary_operation() {
+    print("\n");
+    for (int i = 0; i < 10; i++) {
+        printint(i % 3 == (
+            i % 3 == 0 ? 0 :
+            i % 3 == 1 ? 1 :
+            i % 3 == 2 ? 2 : foo()));
+    }
+
+    int x = false ? foo() : 7;
+    printint(x == 7);
+    x = true ? 8 : foo();
+    printint(x == 8);
+    x = false ? foo() :
+        true  ? 9     : // once we get to the first 'true', we will not continue to check the next ternary expression
+        true  ? foo() : foo();
+    printint(x == 9);
+
+
+    int arr[10];
+    arr[3] = 13;
+    arr[4] = 14;
+    arr[5] = 15;
+    x = arr[4] == 14 ? arr[5] : foo();
+    printint(x == 15);
+    x = arr[4] == arr[5] ? foo() : arr[4];
+    printint(x == 14);
+
+
+    int arr1[10];
+    int y = 9;
+    int arr2[10];
+    for (int i = 0; i < 10; i++) {
+        arr1[i] = 13;
+        arr2[i] = 13;
+    }
+    x = 9;
+    y = y == x ? 2 : 3;
+    printint(y == 2);
+    y = y == x ? 2 : 3;
+    printint(y == 3);
+    y = (y == 2 ? 3 : 4);
+    printint(y == 4);
+    y = (x == 9) ? 4 : 5;
+    printint(y == 4);
+    y = x == 9 ? (5) : 6;
+    printint(y == 5);
+    y = x != 9 ? (5) : 6;
+    printint(y == 6);
+    y = x < 9 ? (6) : (7);
+    printint(y == 7);
+    y = (y > 9) ? (7) : (8+0);
+    printint(y == 8);
+
+    // check all the evaluations didnt overwrite stuff on the stack
+    for (int i = 0; i < 10; i++) {
+        printint(arr1[i] == 13);
+        printint(arr2[i] == 13);
+    }
+
+
+    printint(!is_three(true  ? 0 : 3));
+    printint(!is_three(false ? 3 : 0));
+    printint(is_three(true   ? 3 : 0));
+    printint(is_three(false  ? 0 : 3));
+    printint(!is_three(4));
+
+    for (int i = 0; i < 10; i++) {
+        printint(i == 3 ? is_three(i) : !is_three(i));
+    }
+
+    printint(always_3() ? 1 : foo());
+    printint(always_3() == 3 ? 1 : foo());
+    printint(!always_3() ? foo() : 1);
+    printint(!(always_3() == 3) ? foo() : 1);
+    printint(always_3() != 3 ? foo() : 1);
+
+    y = 2 == (is_three(always_3()) ? 2 : foo());
+    printint(y);
+    y = (is_three(always_3()) ? 2 : foo()) == 2;
+    printint(y);
+
+
+
+    // order of evaluation - evaluated left to right
+    x = 1;
+    y = x == 1 ? 2 : 3; // meaning evaluates like: (x == 1) ? 2 : 3
+    printint(y == 2);
+    // if we want to evaluate otherwise - need parentheses
+    y = x == (1 ? 2 : 3);
+    printint(y == false);
+}
+
+
+int main() {
+    test_assignment_and_unary_operations();
+    test_ternary_operation();
 }

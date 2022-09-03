@@ -76,8 +76,7 @@ int get_next_move(bool player_X_turn) {
     int move;
     do {
         print("Player ");
-        if (player_X_turn) printchar('X');
-        else               printchar('O');
+        printchar(player_X_turn ? 'X' : 'O');
         print(" turn:\n");
 
         move = readint();
@@ -99,11 +98,7 @@ int main() {
             print_board();
 
             int move = get_next_move(player_X_turn);
-            if (player_X_turn)
-                board[move-1]='X';
-            else
-                board[move-1]='O';
-
+            board[move-1]= player_X_turn ? 'X' : 'O';
             player_X_turn = !player_X_turn;
             moves_so_far++;
 

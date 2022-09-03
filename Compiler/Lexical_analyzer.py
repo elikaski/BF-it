@@ -48,6 +48,7 @@ def analyze(text):
         ('\[', Token.LBRACK),
         ('\]', Token.RBRACK),
         ('=|\+=|-=|\*=|/=|%=|<<=|>>=|&=|\|=|\^=', Token.ASSIGN),
+        ('\?', Token.TERNARY),
 
         ('<=|>=|==|!=|<|>', Token.RELOP),
         ('\+\+', Token.INCREMENT),

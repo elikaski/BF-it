@@ -5,7 +5,7 @@ from .Functions import check_function_exists, get_function_object
 from .General import get_variable_dimensions_from_token, get_move_to_return_value_cell_code, get_print_string_code, get_variable_from_ID_token
 from .General import get_literal_token_value, process_switch_cases, is_token_literal
 from .Globals import create_variable_from_definition, get_global_variables, get_variable_size, is_variable_array
-from .Node import NodeToken, NodeArraySetElement, NodeUnaryPrefix, NodeUnaryPostfix, NodeArrayGetElement, NodeFunctionCall, NodeArrayAssignment
+from .Node import NodeToken, NodeTernary, NodeArraySetElement, NodeUnaryPrefix, NodeUnaryPostfix, NodeArrayGetElement, NodeFunctionCall, NodeArrayAssignment
 from .Parser import Parser
 from .Token import Token
 
@@ -583,8 +583,21 @@ class FunctionCompiler:
 
         return n
 
+    def ternary_expression(self):
+        # ternary_expression: logical_or (? expression : ternary_expression)?
+        n = self.logical_or()
+        if self.parser.current_token().type != Token.TERNARY:
+            return n
+
+        self.parser.advance_token()  # skip ?
+        node_true = self.expression()
+        self.parser.check_current_tokens_are([Token.COLON])
+        self.parser.advance_token()  # skip :
+        node_false = self.ternary_expression()
+        return NodeTernary(self.ids_map_list[:], n, node_true, node_false)
+
     def assignment(self):
-        # assignment: ID ASSIGN expression | ID ASSIGN ARRAY_INITIALIZATION | ID (LBRACK expression RBRACK)+ ASSIGN expression | logical_or
+        # assignment: ID ASSIGN expression | ID ASSIGN ARRAY_INITIALIZATION | ID (LBRACK expression RBRACK)+ ASSIGN expression | ternary_expression
 
         if self.parser.current_token().type == Token.ID and self.parser.next_token().type == Token.ASSIGN:
 
@@ -618,8 +631,7 @@ class FunctionCompiler:
 
             return NodeArraySetElement(self.ids_map_list[:], id_token, index_expression, assign_token, value_expression)
         else:
-            # logical or
-            return self.logical_or()
+            return self.ternary_expression()
 
     def expression(self):
         # expression: assignment
@@ -631,6 +643,7 @@ class FunctionCompiler:
         # relative operations (==, !=, <, >, <=, >=)
         # bitwise operations (|, &, ^, ~)
         # logical operations (!, &&, ||, ~)
+        # ternary expression (?)
         # assignment (=, +=, -=, *=, /=, %=, <<=, >>=, &=, |=, ^=)
         # this is implemented using a Node class that represents a parse tree
 
@@ -638,6 +651,7 @@ class FunctionCompiler:
         (used reference: https://introcs.cs.princeton.edu/java/11precedence/)
         order of operations (lowest precedence to highest precedence)
             assignment (=, +=, -=, *=, /=, %=, <<=, >>=, &=, |=, ^=)
+            ternary_expression (?)
             logical_or (||)
             logical_and (&&)
             bitwise_or (|)
@@ -652,7 +666,8 @@ class FunctionCompiler:
             unary_postfix (++, --)
 
         expression: assignment
-        assignment: ID (=|+=|-=|*=|/=|%=|<<=|>>=|&=|(|=)|^=) expression | logical_or
+        assignment: ID (=|+=|-=|*=|/=|%=|<<=|>>=|&=|(|=)|^=) expression | ternary_expression
+        ternary_expression: logical_or (? expression : ternary_expression)?
         logical_or: logical_and (|| logical_and)*
         logical_and: bitwise_or (&& bitwise_or)*
         bitwise_or: bitwise_xor (| bitwise_xor)*

@@ -105,6 +105,43 @@ class NodeToken(Node):
                 return assignment_node.get_code(current_pointer)
 
 
+class NodeTernary(Node):
+    def __init__(self, ids_map_list, condition, node_true, node_false):
+        # node_condition ? node_true : node_false;
+        Node.__init__(self, ids_map_list)
+        self.condition = condition
+        self.node_true = node_true
+        self.node_false = node_false
+
+    def get_code(self, current_pointer, *args, **kwargs):
+        # cells layout:
+        # result, bool_evaluate_node_false, condition
+        code = ">"  # point to bool_evaluate_node_false
+        code += "[-]+"  # bool_evaluate_node_false=1
+        code += ">"  # point to condition
+        code += self.condition.get_code(current_pointer+2)  # evaluate condition
+        code += "<"  # point to condition
+
+        code += "["  # if condition is non-zero
+        code += "<<"  # point to result
+        code += self.node_true.get_code(current_pointer)  # evaluate node_true
+        # now we point to bool_evaluate_node_false
+        code += "[-]"  # zero bool_evaluate_node_false
+        code += ">"  # point to condition
+        code += "[-]"  # zero condition
+        code += "]"  # end if
+
+        code += "<"  # point to bool_evaluate_node_false
+        code += "["  # if bool_evaluate_node_false is 1
+        code += "<"  # point to result
+        code += self.node_false.get_code(current_pointer)  # evaluate node_false
+        # now we point to bool_evaluate_node_false
+        code += "[-]"  # zero bool_evaluate_node_false
+        code += "]"  # end if
+        # now we point to one cell after result - next available cell
+        return code
+
+
 class NodeUnaryPrefix(Node):
     def __init__(self, ids_map_list, operation, literal):
         Node.__init__(self, ids_map_list)
