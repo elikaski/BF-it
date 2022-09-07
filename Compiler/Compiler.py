@@ -35,7 +35,7 @@ class Compiler:
         # save all tokens of this function
         function_name = self.parser.next_token(next_amount=1).data
         RPAREN_index = self.parser.find_matching(starting_index=self.parser.current_token_index+2)  # first find RPAREN
-        self.parser.check_next_tokens_are([Token.LBRACE], starting_index=RPAREN_index)
+        self.parser.check_next_token_is(Token.LBRACE, starting_index=RPAREN_index)
         RBRACE_index = self.parser.find_matching(starting_index=RPAREN_index+1)  # then find RBRACE
 
         # take all tokens between INT and RBRACE and pass them to function object
@@ -74,7 +74,7 @@ class Compiler:
                     raise BFSyntaxError("Expected LBRACE or STRING at '%s'" % self.parser.current_token())
 
                 literal_tokens_list = self.parser.compile_array_initialization_list()
-                self.parser.check_current_tokens_are([Token.SEMICOLON])
+                self.parser.check_current_token_is(Token.SEMICOLON)
                 self.parser.advance_token()  # skip SEMICOLON
 
                 array_dimensions = get_variable_dimensions(variable)
@@ -90,7 +90,7 @@ class Compiler:
             self.parser.advance_token()  # skip SEMICOLON
             code += '>'  # advance to after this variable
         else:
-            self.parser.check_current_tokens_are([Token.ASSIGN])
+            self.parser.check_current_token_is(Token.ASSIGN)
             if self.parser.current_token().data != "=":
                 raise BFSyntaxError("Unexpected %s when initializing global variable. Expected ASSIGN (=)" % self.parser.current_token())
             self.parser.advance_token()  # skip ASSIGN
@@ -100,7 +100,7 @@ class Compiler:
 
             code += get_literal_token_code(self.parser.current_token())
 
-            self.parser.check_next_tokens_are([Token.SEMICOLON])
+            self.parser.check_next_token_is(Token.SEMICOLON)
             self.parser.advance_token(amount=2)  # skip (NUM|CHAR|TRUE|FALSE) SEMICOLON
 
         return code
@@ -119,7 +119,7 @@ class Compiler:
                 self.parser.advance_token()
                 token = self.parser.current_token()
                 continue
-            self.parser.check_next_tokens_are([Token.ID])
+            self.parser.check_next_token_is(Token.ID)
 
             if self.parser.next_token(next_amount=2).type == Token.LPAREN:
                 function = self.create_function_object()

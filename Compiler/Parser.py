@@ -82,8 +82,14 @@ class Parser:
             if self.tokens[starting_index + 1 + i].type != tokens_list[i]:
                 raise BFSyntaxError("Expected %s after %s" % (str(tokens_list[i]), [str(t) for t in self.tokens[starting_index: starting_index+1+i]]))
 
+    def check_next_token_is(self, token, starting_index=None):
+        self.check_next_tokens_are([token], starting_index=starting_index)
+
     def check_current_tokens_are(self, tokens_list):
         self.check_next_tokens_are(tokens_list, starting_index=self.current_token_index - 1)
+
+    def check_current_token_is(self, token):
+        self.check_current_tokens_are([token])
 
     def compile_array_initialization_list(self):
         # {1, 2, 3, ...} or {array_initialization_list, array_initialization_list, array_initialization_list, ...} or string
@@ -118,6 +124,6 @@ class Parser:
             if self.current_token().type == Token.RBRACE:
                 break
 
-        self.check_current_tokens_are([Token.RBRACE])
+        self.check_current_token_is(Token.RBRACE)
         self.advance_token()  # skip RBRACE
         return list_tokens

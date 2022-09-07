@@ -248,6 +248,30 @@ void test_ternary_operation() {
     // if we want to evaluate otherwise - need parentheses
     y = x == (1 ? 2 : 3);
     printint(y == false);
+
+
+
+    // assignment inside ternary operator will take place only if required
+    x = 5;
+    y = false ? x++ : x;
+    printint(x == 5);
+    printint(y == 5);
+
+    y = true ? x++ : x;
+    printint(x == 6);
+    printint(y == 5);
+
+    // condition expression can be assignment
+    x = 1;
+    y = x-- ? 2 : 3;
+    printint(y == 2);
+    printint(x == 0);
+    y = x-- ? 2 : 3;
+    printint(y == 3);
+
+    x = 1;
+    int z = --x ? 2 : 3;
+    printint(z == 3 && x == 0);
 }
 
 

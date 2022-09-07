@@ -6,7 +6,16 @@ void character_trick() {
 	printchar('\n');
 }
 
+void function_that_is_never_called() {
+    functions that we never called are not compiled
+    so we can have all the syntax errors we want :)
+    int x = ++++++----10293813asjldhasjldhalsadaldhajh ::::!!!%^&* ??? ][)(>< LOL
+}
+
 int main() {
+    // empty statement (just a semicolon) is a valid statement
+    ;;;;;;;;;;;;
+
 	// true is evaluated to 1
 	printint(5 * true == 5);
 

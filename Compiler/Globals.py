@@ -61,7 +61,7 @@ def create_variable_from_definition(parser, index=None, advance_tokens=False):
 
     assert parser.tokens[index].type == Token.INT
 
-    parser.check_next_tokens_are([Token.ID], starting_index=index)
+    parser.check_next_token_is(Token.ID, starting_index=index)
     ID = parser.tokens[index + 1].data
 
     if advance_tokens:

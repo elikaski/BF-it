@@ -112,7 +112,7 @@ class FunctionCompiler:
         ID_token = self.parser.current_token()
         self.parser.advance_token(2)  # skip ID, LBRACK
         first_index_expression = index_expression = self.expression()  # first dimension
-        self.parser.check_current_tokens_are([Token.RBRACK])
+        self.parser.check_current_token_is(Token.RBRACK)
         self.parser.advance_token()  # skip RBRACK
 
         # now handle the next dimensions (if multi-dimensional array)
@@ -123,8 +123,8 @@ class FunctionCompiler:
 
             # multiply by next dimensions sizes
             multiply_amount = reduce(lambda x, y: x * y, dimensions[1:])  # size of the following dimensions
-            node_token_multiply_amount = NodeToken(self.ids_map_list[:], token=Token(Token.NUM, ID_token.line, ID_token.column, data=str(multiply_amount)))
-            index_expression = NodeToken(self.ids_map_list[:], token=multiply_token, left=first_index_expression, right=node_token_multiply_amount)
+            node_token_multiply_amount = NodeToken(self.ids_map_list, token=Token(Token.NUM, ID_token.line, ID_token.column, data=str(multiply_amount)))
+            index_expression = NodeToken(self.ids_map_list, token=multiply_token, left=first_index_expression, right=node_token_multiply_amount)
 
             # handle next dimensions
             dimension = 1
@@ -134,23 +134,23 @@ class FunctionCompiler:
                         return first_index_expression  # allow use of only one dimension for multi-dimensional array
                     raise BFSemanticError("%s is a %s-dimensional array, but only %s dimension(s) given as index" %
                                           (str(ID_token), len(dimensions), dimension))
-                self.parser.check_current_tokens_are([Token.LBRACK])
+                self.parser.check_current_token_is(Token.LBRACK)
                 self.parser.advance_token()  # skip LBRACK
                 exp = self.expression()
 
-                self.parser.check_current_tokens_are([Token.RBRACK])
+                self.parser.check_current_token_is(Token.RBRACK)
                 self.parser.advance_token()  # skip RBRACK
 
                 # current_dimension_index *= size_of_following_dimensions
                 if dimension + 1 < len(dimensions):  # not last dimension - need to multiply and add
                     multiply_amount = reduce(lambda x, y: x * y, dimensions[dimension + 1:])  # size of the following dimensions
-                    node_token_multiply_amount = NodeToken(self.ids_map_list[:], token=Token(Token.NUM, ID_token.line, ID_token.column, data=str(multiply_amount)))
-                    multiply_node = NodeToken(self.ids_map_list[:], token=multiply_token, left=exp, right=node_token_multiply_amount)
+                    node_token_multiply_amount = NodeToken(self.ids_map_list, token=Token(Token.NUM, ID_token.line, ID_token.column, data=str(multiply_amount)))
+                    multiply_node = NodeToken(self.ids_map_list, token=multiply_token, left=exp, right=node_token_multiply_amount)
 
                     # prev_dimensions_index += current_dimension_index
-                    index_expression = NodeToken(self.ids_map_list[:], token=add_token, left=index_expression, right=multiply_node)
+                    index_expression = NodeToken(self.ids_map_list, token=add_token, left=index_expression, right=multiply_node)
                 else:  # last dimension - no need to multiply, just add
-                    index_expression = NodeToken(self.ids_map_list[:], token=add_token, left=index_expression, right=exp)
+                    index_expression = NodeToken(self.ids_map_list, token=add_token, left=index_expression, right=exp)
                 dimension += 1
 
         if self.parser.current_token().type == Token.LBRACK:  # too many indexes given...
@@ -174,7 +174,7 @@ class FunctionCompiler:
         # or int id[a][b][c]... = "\1\2\3...";
         # or int id[a][b][c]... = {{1, 2}, {3, 4}, ...};
         # or array assignment: id = {1, 2, 3, ...};
-        self.parser.check_current_tokens_are([Token.ASSIGN])
+        self.parser.check_current_token_is(Token.ASSIGN)
         if self.parser.current_token().data != "=":
             raise BFSyntaxError("Unexpected %s when assigning array. Expected ASSIGN (=)" % self.parser.current_token())
 
@@ -184,10 +184,10 @@ class FunctionCompiler:
         self.parser.advance_token()  # skip to LBRACE or STRING
         literal_tokens_list = self.parser.compile_array_initialization_list()
 
-        return NodeArrayAssignment(self.ids_map_list[:], token_id, literal_tokens_list)
+        return NodeArrayAssignment(self.ids_map_list, token_id, literal_tokens_list)
 
     def compile_variable_declaration(self):
-        self.parser.check_next_tokens_are([Token.ID])
+        self.parser.check_next_token_is(Token.ID)
         self.parser.advance_token()  # skip "INT" (now points to ID)
         assert self.parser.current_token().type == Token.ID
 
@@ -212,7 +212,7 @@ class FunctionCompiler:
             else:
                 code = ''  # just array definition
                 # no code is generated here. code was generated for defining this variable when we entered the scope
-            self.parser.check_current_tokens_are([Token.SEMICOLON])
+            self.parser.check_current_token_is(Token.SEMICOLON)
             self.parser.advance_token()  # skip SEMICOLON
             return code
         else:
@@ -367,7 +367,7 @@ class FunctionCompiler:
         check_function_exists(function_token, len(parameters))
         function_to_call = get_function_object(function_name)
 
-        return NodeFunctionCall(self.ids_map_list[:], function_to_call, parameters)
+        return NodeFunctionCall(self.ids_map_list, function_to_call, parameters)
 
     def literal(self):
         # literal: NUM | CHAR | ID | ID (LBRACK expression RBRACK)+ | TRUE | FALSE | function_call | ( expression )
@@ -379,20 +379,20 @@ class FunctionCompiler:
 
         if token.type == Token.ID and self.parser.next_token().type == Token.LBRACK:  # array - ID(LBRACK expression RBRACK)+
             index_expression = self.get_array_index_expression()
-            return NodeArrayGetElement(self.ids_map_list[:], token, index_expression)
+            return NodeArrayGetElement(self.ids_map_list, token, index_expression)
 
         if is_token_literal(token) or token.type == Token.ID:
             self.parser.advance_token()
-            return NodeToken(self.ids_map_list[:], token=token)
+            return NodeToken(self.ids_map_list, token=token)
 
         if token.type != Token.LPAREN:
             raise BFSyntaxError("Unexpected '%s'. expected literal (NUM | ID | ID(LBRACK expression RBRACK)+ | TRUE | FALSE | function_call | ( expression ))" % str(token))
 
         # ( expression )
-        self.parser.check_current_tokens_are([Token.LPAREN])
+        self.parser.check_current_token_is(Token.LPAREN)
         self.parser.advance_token()  # skip LPAREN
         exp = self.expression()
-        self.parser.check_current_tokens_are([Token.RPAREN])
+        self.parser.check_current_token_is(Token.RPAREN)
         self.parser.advance_token()  # skip RPAREN
 
         return exp
@@ -405,7 +405,7 @@ class FunctionCompiler:
 
         if token.type in [Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE]:
             self.parser.advance_token()
-            new_node = NodeUnaryPostfix(self.ids_map_list[:], operation=token, literal=literal)
+            new_node = NodeUnaryPostfix(self.ids_map_list, operation=token, literal=literal)
             return new_node
         else:
             return literal
@@ -419,14 +419,14 @@ class FunctionCompiler:
             self.parser.advance_token()
             unary_prefix = self.unary_prefix()
 
-            new_node = NodeUnaryPrefix(self.ids_map_list[:], operation=token, literal=unary_prefix)
+            new_node = NodeUnaryPrefix(self.ids_map_list, operation=token, literal=unary_prefix)
             return new_node
 
         elif token.type in [Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE]:
             self.parser.advance_token()
             literal = self.literal()
 
-            new_node = NodeUnaryPrefix(self.ids_map_list[:], operation=token, literal=literal)
+            new_node = NodeUnaryPrefix(self.ids_map_list, operation=token, literal=literal)
             return new_node
 
         else:
@@ -442,7 +442,7 @@ class FunctionCompiler:
             self.parser.advance_token()
             next_factor = self.unary_prefix()
 
-            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_factor)
+            new_node = NodeToken(self.ids_map_list, token=token, left=n, right=next_factor)
             n = new_node
 
             token = self.parser.current_token()
@@ -459,7 +459,7 @@ class FunctionCompiler:
             self.parser.advance_token()
             next_term = self.multiplicative()
 
-            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_term)
+            new_node = NodeToken(self.ids_map_list, token=token, left=n, right=next_term)
             n = new_node
 
             token = self.parser.current_token()
@@ -476,7 +476,7 @@ class FunctionCompiler:
             self.parser.advance_token()
             next_additive = self.additive()
 
-            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_additive)
+            new_node = NodeToken(self.ids_map_list, token=token, left=n, right=next_additive)
             n = new_node
 
             token = self.parser.current_token()
@@ -495,7 +495,7 @@ class FunctionCompiler:
         self.parser.advance_token()
         b = self.shift()
 
-        new_node = NodeToken(self.ids_map_list[:], token=token, left=a, right=b)
+        new_node = NodeToken(self.ids_map_list, token=token, left=a, right=b)
         return new_node
 
     def bitwise_and(self):
@@ -508,7 +508,7 @@ class FunctionCompiler:
             self.parser.advance_token()
             next_relational = self.relational()
 
-            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_relational)
+            new_node = NodeToken(self.ids_map_list, token=token, left=n, right=next_relational)
             n = new_node
 
             token = self.parser.current_token()
@@ -525,7 +525,7 @@ class FunctionCompiler:
             self.parser.advance_token()
             next_bitwise_and = self.bitwise_and()
 
-            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_bitwise_and)
+            new_node = NodeToken(self.ids_map_list, token=token, left=n, right=next_bitwise_and)
             n = new_node
 
             token = self.parser.current_token()
@@ -542,7 +542,7 @@ class FunctionCompiler:
             self.parser.advance_token()
             next_bitwise_xor = self.bitwise_xor()
 
-            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_bitwise_xor)
+            new_node = NodeToken(self.ids_map_list, token=token, left=n, right=next_bitwise_xor)
             n = new_node
 
             token = self.parser.current_token()
@@ -559,7 +559,7 @@ class FunctionCompiler:
             self.parser.advance_token()
             next_bitwise_or = self.bitwise_or()
 
-            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_bitwise_or)
+            new_node = NodeToken(self.ids_map_list, token=token, left=n, right=next_bitwise_or)
             n = new_node
 
             token = self.parser.current_token()
@@ -576,7 +576,7 @@ class FunctionCompiler:
             self.parser.advance_token()
             next_and = self.logical_and()
 
-            new_node = NodeToken(self.ids_map_list[:], token=token, left=n, right=next_and)
+            new_node = NodeToken(self.ids_map_list, token=token, left=n, right=next_and)
             n = new_node
 
             token = self.parser.current_token()
@@ -591,10 +591,10 @@ class FunctionCompiler:
 
         self.parser.advance_token()  # skip ?
         node_true = self.expression()
-        self.parser.check_current_tokens_are([Token.COLON])
+        self.parser.check_current_token_is(Token.COLON)
         self.parser.advance_token()  # skip :
         node_false = self.ternary_expression()
-        return NodeTernary(self.ids_map_list[:], n, node_true, node_false)
+        return NodeTernary(self.ids_map_list, n, node_true, node_false)
 
     def assignment(self):
         # assignment: ID ASSIGN expression | ID ASSIGN ARRAY_INITIALIZATION | ID (LBRACK expression RBRACK)+ ASSIGN expression | ternary_expression
@@ -616,7 +616,7 @@ class FunctionCompiler:
 
             expression_node = self.expression()
 
-            new_node = NodeToken(self.ids_map_list[:], left=NodeToken(self.ids_map_list[:], token=id_token), token=assign_token, right=expression_node)
+            new_node = NodeToken(self.ids_map_list, left=NodeToken(self.ids_map_list, token=id_token), token=assign_token, right=expression_node)
             return new_node
 
         elif self.parser.current_token().type == Token.ID and self.parser.next_token().type == Token.LBRACK and \
@@ -624,12 +624,12 @@ class FunctionCompiler:
             # ID (LBRACK expression RBRACK)+ ASSIGN value_expression
             id_token = self.parser.current_token()
             index_expression = self.get_array_index_expression()
-            self.parser.check_current_tokens_are([Token.ASSIGN])
+            self.parser.check_current_token_is(Token.ASSIGN)
             assign_token = self.parser.current_token()
             self.parser.advance_token()  # skip ASSIGN
             value_expression = self.expression()
 
-            return NodeArraySetElement(self.ids_map_list[:], id_token, index_expression, assign_token, value_expression)
+            return NodeArraySetElement(self.ids_map_list, id_token, index_expression, assign_token, value_expression)
         else:
             return self.ternary_expression()
 
@@ -707,7 +707,7 @@ class FunctionCompiler:
             if self.parser.current_token().type == Token.COMMA:
                 self.parser.advance_token()
             else:
-                self.parser.check_current_tokens_are([Token.RPAREN])
+                self.parser.check_current_token_is(Token.RPAREN)
 
             token = self.parser.current_token()
 
@@ -729,7 +729,7 @@ class FunctionCompiler:
             if self.parser.current_token().type == Token.COMMA:
                 self.parser.advance_token()
             else:
-                self.parser.check_current_tokens_are([Token.RPAREN])
+                self.parser.check_current_token_is(Token.RPAREN)
             token = self.parser.current_token()
 
         self.parser.advance_token()  # skip RPAREN
@@ -746,7 +746,7 @@ class FunctionCompiler:
 
         # return exp;
         expression_code = self.compile_expression()
-        self.parser.check_current_tokens_are([Token.SEMICOLON])
+        self.parser.check_current_token_is(Token.SEMICOLON)
 
         self.parser.advance_token()  # skip ;
 
@@ -764,7 +764,7 @@ class FunctionCompiler:
         assert self.parser.current_token().type in [Token.ID, Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE]
 
         code = self.compile_expression()
-        self.parser.check_current_tokens_are([Token.SEMICOLON])
+        self.parser.check_current_token_is(Token.SEMICOLON)
         self.parser.advance_token()  # skip ;
 
         code += "<"  # discard the expression's value
@@ -772,6 +772,7 @@ class FunctionCompiler:
         return code
 
     def compile_print_string(self):
+        # print(string);
         self.parser.check_next_tokens_are([Token.LPAREN, Token.STRING, Token.RPAREN, Token.SEMICOLON])
         self.parser.advance_token(amount=2)  # skip print (
         string_to_print = self.parser.current_token().data
@@ -785,7 +786,7 @@ class FunctionCompiler:
         function_call_node = self.function_call()
         function_call_code = function_call_node.get_code(current_pointer=self.current_stack_pointer())
 
-        self.parser.check_current_tokens_are([Token.SEMICOLON])
+        self.parser.check_current_token_is(Token.SEMICOLON)
         self.parser.advance_token()  # skip ;
 
         code = function_call_code  # at this point, we point to one after the return value
@@ -795,11 +796,11 @@ class FunctionCompiler:
     def compile_if(self):
         # if (expression) statement (else statement)?   note - statement can be scope { }
 
-        self.parser.check_next_tokens_are([Token.LPAREN])
+        self.parser.check_next_token_is(Token.LPAREN)
         self.parser.advance_token(amount=2)  # skip to after LPAREN
 
         expression_code = self.compile_expression()
-        self.parser.check_current_tokens_are([Token.RPAREN])
+        self.parser.check_current_token_is(Token.RPAREN)
         self.parser.advance_token()  # point to after RPAREN
 
         # if ... (else ...)?
@@ -843,12 +844,12 @@ class FunctionCompiler:
         return code
 
     def compile_while(self):  # while (expression) statement       note - statement can be scope { }
-        self.parser.check_next_tokens_are([Token.LPAREN])
+        self.parser.check_next_token_is(Token.LPAREN)
         self.parser.advance_token(amount=2)  # skip to after LPAREN
 
         expression_code = self.compile_expression()
 
-        self.parser.check_current_tokens_are([Token.RPAREN])
+        self.parser.check_current_token_is(Token.RPAREN)
         self.parser.advance_token()  # point to after RPAREN
 
         inner_scope_code = self.compile_statement()
@@ -864,7 +865,7 @@ class FunctionCompiler:
         return code
 
     def compile_do_while(self):  # do statement while (expression) semicolon      note - statement can be scope { }
-        self.parser.check_current_tokens_are([Token.DO])
+        self.parser.check_current_token_is(Token.DO)
         self.parser.advance_token()
 
         inner_scope_code = self.compile_statement()
@@ -914,7 +915,7 @@ class FunctionCompiler:
                 if value in [case for (case, _, _) in cases]:
                     raise BFSemanticError("default case %s already exists." % self.parser.current_token())
 
-            self.parser.check_next_tokens_are([Token.COLON])
+            self.parser.check_next_token_is(Token.COLON)
             self.parser.advance_token(amount=2)  # point to after COLON
 
             inner_case_code = ""
@@ -923,7 +924,7 @@ class FunctionCompiler:
 
             has_break = False
             if self.parser.current_token().type == Token.BREAK:  # ignore all statements after break
-                self.parser.check_next_tokens_are([Token.SEMICOLON])
+                self.parser.check_next_token_is(Token.SEMICOLON)
                 self.parser.advance_token(amount=2)  # skip break SEMICOLON
                 has_break = True
                 while self.parser.current_token().type not in [Token.CASE, Token.DEFAULT, Token.RBRACE]:
@@ -932,7 +933,7 @@ class FunctionCompiler:
 
         if self.parser.current_token().type not in [Token.CASE, Token.DEFAULT, Token.RBRACE]:
             raise BFSyntaxError("Expected case / default / RBRACE (}) instead of token %s" % self.parser.current_token())
-        self.parser.check_current_tokens_are([Token.RBRACE])
+        self.parser.check_current_token_is(Token.RBRACE)
         self.parser.advance_token()
         self.decrease_stack_pointer(amount=2)
 
@@ -991,7 +992,7 @@ class FunctionCompiler:
         initial_statement = self.compile_statement()
 
         condition_expression = self.compile_expression()
-        self.parser.check_current_tokens_are([Token.SEMICOLON])
+        self.parser.check_current_token_is(Token.SEMICOLON)
         self.parser.advance_token()  # skip ;
 
         if self.parser.current_token().type == Token.RPAREN:
@@ -999,7 +1000,7 @@ class FunctionCompiler:
         else:
             modification_expression = self.compile_expression()
             modification_expression += "<"  # discard expression value
-        self.parser.check_current_tokens_are([Token.RPAREN])
+        self.parser.check_current_token_is(Token.RPAREN)
         self.parser.advance_token()  # skip )
 
         inner_scope_code = ""
@@ -1054,7 +1055,7 @@ class FunctionCompiler:
                 return self.compile_function_call_statement()
             raise BFSyntaxError("Unexpected '%s' after '%s'. Expected '=|+=|-=|*=|/=|%%=|<<=|>>=|&=|(|=)|^=' (assignment), '++|--' (modification) or '(' (function call)" % (str(self.parser.next_token()), str(token)))
 
-        elif token.type == Token.PRINT:  # print(string);
+        elif token.type == Token.PRINT:
             return self.compile_print_string()
 
         elif token.type == Token.IF:

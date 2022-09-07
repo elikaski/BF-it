@@ -16,7 +16,7 @@ Each class implements a get_code() function that receives a "stack pointer" and 
 class Node:
     def __init__(self, ids_map_list):
         # holds a copy of ids_map_list as it was when we parsed the expression
-        self.ids_map_list = ids_map_list
+        self.ids_map_list = ids_map_list[:]
 
     def assign_token_to_op_token(self, assign_token):
         assert assign_token.data in ["+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "|=", "^="]
@@ -323,7 +323,7 @@ class NodeArraySetElement(NodeArrayElement):
 
             # create a node for id[exp] + expression
             op_node = self.assign_token_to_op_token(assign_token)
-            op_node.left = NodeArrayGetElement(self.ids_map_list[:], token_id, node_expression_index)
+            op_node.left = NodeArrayGetElement(self.ids_map_list, token_id, node_expression_index)
             op_node.right = node_expression_value
 
             self.node_expression_value = op_node
