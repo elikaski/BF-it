@@ -1,5 +1,5 @@
-from .Functions import insert_function_object
-from .Token import Token
+from Functions import insert_function_object
+from Token import Token
 
 
 class LibraryFunctionCompiler:

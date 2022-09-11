@@ -1,6 +1,6 @@
 from collections import namedtuple
-from .Token import Token
-from .General import dimensions_to_size
+from Token import Token
+from General import dimensions_to_size
 
 """
 This file holds the program's functions and global variables

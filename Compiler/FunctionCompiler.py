@@ -1,13 +1,13 @@
 from collections import namedtuple
 from functools import reduce
-from .Exceptions import BFSyntaxError, BFSemanticError
-from .Functions import check_function_exists, get_function_object
-from .General import get_variable_dimensions_from_token, get_move_to_return_value_cell_code, get_print_string_code, get_variable_from_ID_token
-from .General import get_literal_token_value, process_switch_cases, is_token_literal
-from .Globals import create_variable_from_definition, get_global_variables, get_variable_size, is_variable_array
-from .Node import NodeToken, NodeTernary, NodeArraySetElement, NodeUnaryPrefix, NodeUnaryPostfix, NodeArrayGetElement, NodeFunctionCall, NodeArrayAssignment
-from .Parser import Parser
-from .Token import Token
+from Exceptions import BFSyntaxError, BFSemanticError
+from Functions import check_function_exists, get_function_object
+from General import get_variable_dimensions_from_token, get_move_to_return_value_cell_code, get_print_string_code, get_variable_from_ID_token
+from General import get_literal_token_value, process_switch_cases, is_token_literal
+from Globals import create_variable_from_definition, get_global_variables, get_variable_size, is_variable_array
+from Node import NodeToken, NodeTernary, NodeArraySetElement, NodeUnaryPrefix, NodeUnaryPostfix, NodeArrayGetElement, NodeFunctionCall, NodeArrayAssignment
+from Parser import Parser
+from Token import Token
 
 """
 This file implements the FunctionCompiler object
