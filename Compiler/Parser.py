@@ -1,6 +1,6 @@
-from Exceptions import BFSyntaxError, BFSemanticError
-from Token import Token
-from General import is_token_literal
+from .Exceptions import BFSyntaxError, BFSemanticError
+from .Token import Token
+from .General import is_token_literal
 
 
 class Parser:

@@ -1,11 +1,11 @@
-from Exceptions import BFSemanticError
-from General import get_copy_from_variable_code, get_copy_to_variable_code
-from General import get_move_left_index_cell_code, get_move_right_index_cells_code
-from General import get_offset_to_variable, get_variable_dimensions_from_token
-from General import get_op_between_literals_code, get_literal_token_code, get_token_ID_code
-from General import get_unary_prefix_op_code, get_unary_postfix_op_code, is_token_literal
-from General import unpack_literal_tokens_to_array_dimensions, get_op_boolean_operator_code
-from Token import Token
+from .Exceptions import BFSemanticError
+from .General import get_copy_from_variable_code, get_copy_to_variable_code
+from .General import get_move_left_index_cell_code, get_move_right_index_cells_code
+from .General import get_offset_to_variable, get_variable_dimensions_from_token
+from .General import get_op_between_literals_code, get_literal_token_code, get_token_ID_code
+from .General import get_unary_prefix_op_code, get_unary_postfix_op_code, is_token_literal
+from .General import unpack_literal_tokens_to_array_dimensions, get_op_boolean_operator_code
+from .Token import Token
 
 """
 This file holds classes that are used to create the parse tree of expressions

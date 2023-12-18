@@ -1,5 +1,5 @@
-from Exceptions import BFSyntaxError, BFSemanticError
-from Token import Token
+from .Exceptions import BFSyntaxError, BFSemanticError
+from .Token import Token
 from functools import reduce
 
 """

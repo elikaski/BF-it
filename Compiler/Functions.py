@@ -1,5 +1,5 @@
 from copy import deepcopy
-from Exceptions import BFSemanticError
+from .Exceptions import BFSemanticError
 
 functions = dict()  # Global dictionary of function_name --> FunctionCompiler objects
 

@@ -1,5 +1,5 @@
-from General import get_NUM_token_value
-from Token import Token
+from .General import get_NUM_token_value
+from .Token import Token
 
 """
 This file holds functions that optimize code on syntax-level. For example:

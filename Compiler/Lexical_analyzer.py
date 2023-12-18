@@ -1,6 +1,6 @@
 import re
-from Token import Token
-from Optimizer import optimize
+from .Token import Token
+from .Optimizer import optimize
 
 
 class LexicalErrorException(Exception):

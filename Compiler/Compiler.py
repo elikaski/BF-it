@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-from Exceptions import BFSyntaxError, BFSemanticError
-from FunctionCompiler import FunctionCompiler
-from Functions import check_function_exists, get_function_object, insert_function_object
-from General import is_token_literal, get_literal_token_code, unpack_literal_tokens_to_array_dimensions
-from Globals import get_global_variables_size, get_variable_size, get_variable_dimensions, insert_global_variable, create_variable_from_definition
-from Lexical_analyzer import analyze
-from Optimizer import optimize
-from LibraryFunctionCompiler import insert_library_functions
-from Parser import Parser
-from Token import Token
+from .Exceptions import BFSyntaxError, BFSemanticError
+from .FunctionCompiler import FunctionCompiler
+from .Functions import check_function_exists, get_function_object, insert_function_object
+from .General import is_token_literal, get_literal_token_code, unpack_literal_tokens_to_array_dimensions
+from .Globals import get_global_variables_size, get_variable_size, get_variable_dimensions, insert_global_variable, create_variable_from_definition
+from .Lexical_analyzer import analyze
+from .Optimizer import optimize
+from .LibraryFunctionCompiler import insert_library_functions
+from .Parser import Parser
+from .Token import Token
 
 """
 This file is responsible for creating FunctionCompiler objects and global variables objects
