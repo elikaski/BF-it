@@ -8,6 +8,7 @@ from .Lexical_analyzer import analyze
 from .Optimizer import optimize
 from .LibraryFunctionCompiler import insert_library_functions
 from .Parser import Parser
+from .Preprocesser import Preprocesser
 from .Token import Token
 
 """
@@ -18,7 +19,8 @@ And finally, return the code of the main function
 
 class Compiler:
     def __init__(self, code, optimize_code=False):
-        tokens = analyze(code)
+        full_code = Preprocesser.preprocess(code)
+        tokens = analyze(full_code)
         if optimize_code:
             optimize(tokens)
         self.parser = Parser(tokens)
