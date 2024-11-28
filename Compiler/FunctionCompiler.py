@@ -411,11 +411,13 @@ class FunctionCompiler:
             return literal
 
     def unary_prefix(self):
-        # unary_prefix:  ( (!)* unary_prefix ) | ( ( ++ | -- | UNARY_MULTIPLICATIVE | ~ ) literal ) | unary_postfix
+        # unary_prefix:  ( (!|+|-)* unary_prefix ) | ( ( ++ | -- | UNARY_MULTIPLICATIVE | ~ ) literal ) | unary_postfix
 
         token = self.parser.current_token()
 
-        if token.type in [Token.NOT, Token.BITWISE_NOT]:
+        if token.type in [Token.NOT, Token.BITWISE_NOT, Token.BINOP]:
+            if token.type == Token.BINOP and token.data not in ["+", "-"]:
+                    raise BFSyntaxError("Expected either + or - as unary prefix instead of token %s" % self.parser.current_token())
             self.parser.advance_token()
             unary_prefix = self.unary_prefix()
 
@@ -677,7 +679,7 @@ class FunctionCompiler:
         shift: additive ((<<|>>) additive)*
         additive: multiplicative ((PLUS|MINUS) multiplicative)*
         multiplicative: unary_prefix ((MUL|DIV|MOD) unary_prefix)*
-        unary_prefix:  ( (!)* unary_prefix ) | ( ( ++ | -- | ~ ) literal ) | unary_postfix
+        unary_prefix:  ( (!|+|-)* unary_prefix ) | ( ( ++ | -- | ~ ) literal ) | unary_postfix
         unary_postfix: literal ( ++ | -- )?
         literal: NUM | CHAR | ID | ID[expression] | TRUE | FALSE | function_call | ( expression )
         """

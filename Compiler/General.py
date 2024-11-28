@@ -654,6 +654,19 @@ def get_unary_prefix_op_code(token, offset_to_variable=None):
 
         return code
 
+    elif token.type == Token.BINOP:
+        assert token.data in ["+", "-"]
+        if token.data == "+":
+            # keep value as-is
+            return '>'
+        elif token.data == "-":
+            # a temp
+            code = ">[-]" # zero temp
+            code += "<" # point to a
+            code += "[->-<]" # sub a from temp
+            code += ">" # point to temp
+            code += "[<+>-]" # copy temp to a
+            return code
     raise NotImplementedError
 
 

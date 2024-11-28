@@ -95,5 +95,17 @@ int main() {
 	// will result in an infinite loop
 	// because when i=0, and i--; is performed, i becomes 255.
 
+    // "negative" numbers are just unsigned numbers
+	printint(-1 == 255);
+	printint(-2 == 254);
+	printint(-3 == 253);
+
+	printint(1 - -1 == 2); // unary negate numbers
+	printint(+1 == 1); // unary positive does nothing
+
+	x = 0;
+	x -= -1;
+	printint(x==1);
+
 	character_trick();
 }

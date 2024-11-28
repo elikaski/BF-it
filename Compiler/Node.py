@@ -149,10 +149,10 @@ class NodeUnaryPrefix(Node):
         self.node_literal = literal
 
     def get_code(self, current_pointer, *args, **kwargs):
-        # unary prefix (!x or ++x or ~x)
-        assert self.token_operation.type in [Token.NOT, Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE, Token.BITWISE_NOT]
+        # unary prefix (!x or ++x or ~x or -x)
+        assert self.token_operation.type in [Token.NOT, Token.INCREMENT, Token.DECREMENT, Token.UNARY_MULTIPLICATIVE, Token.BITWISE_NOT, Token.BINOP]
 
-        if self.token_operation.type in [Token.NOT, Token.BITWISE_NOT]:
+        if self.token_operation.type in [Token.NOT, Token.BITWISE_NOT, Token.BINOP]:
             code = self.node_literal.get_code(current_pointer)
             code += "<"  # point to operand
             code += get_unary_prefix_op_code(self.token_operation)
