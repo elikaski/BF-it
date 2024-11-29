@@ -1216,6 +1216,10 @@ def get_literal_token_value(token):
 def get_NUM_token_value(token):
     if token.data.startswith("0x"):
         return int(token.data, 16)
+    elif token.data.startswith("0o"):
+        return int(token.data, 8)
+    elif token.data.startswith("0b"):
+        return int(token.data, 2)
     else:
         return int(token.data)
 

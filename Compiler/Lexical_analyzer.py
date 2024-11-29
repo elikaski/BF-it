@@ -65,6 +65,8 @@ def analyze(text):
         ('([a-zA-Z_][a-zA-Z0-9_]*)',    Token.ID),
         ('(\d+)',     Token.NUM),
         ('(0x[A-Fa-f\d]+)',     Token.NUM),  # hexadecimal number
+        ('(0o[0-7]+)',     Token.NUM),  # octal number
+        ('(0b[01]+)',     Token.NUM),  # binary number
         (r'\"(\\\"|[^"])*"',   Token.STRING),
         (r'\'(\\\'|(\\)?[^\'])\'', Token.CHAR),
         ('//.*(\\n|$)', Token.COMMENT),

@@ -272,6 +272,17 @@ void test_ternary_operation() {
     x = 1;
     int z = --x ? 2 : 3;
     printint(z == 3 && x == 0);
+
+
+    // hex numbers, octal numbers, binary numbers
+    x = 0x10;
+    printint(x == 16);
+
+    x = 0o17;
+    printint(x == 15);
+
+    x = 0b11001100;
+    printint(x == 204);
 }
 
 

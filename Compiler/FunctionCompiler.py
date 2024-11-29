@@ -1092,7 +1092,7 @@ class FunctionCompiler:
         elif token.type in [Token.CASE, Token.DEFAULT]:
             raise BFSyntaxError("%s not inside a switch statement" % token)
 
-        raise NotImplementedError(token)
+        raise BFSyntaxError("Invalid statement at " + str(token))
 
     def compile_scope_statements(self):
         tokens = self.tokens
